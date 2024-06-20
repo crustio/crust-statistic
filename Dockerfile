@@ -4,8 +4,8 @@ WORKDIR /src
 RUN go mod download
 RUN go build  .
 
-FROM debian:stretch-slim
-RUN apt-get -y update && apt-get -y upgrade && apt-get install ca-certificates wget -y
+FROM debian:trixie
+RUN apt-get -y update && apt-get -y upgrade && apt-get install -y ca-certificates
 
 
 COPY --from=builder /src/statistic /app/statistic

@@ -14,21 +14,28 @@ const PB uint64 = 1 << 50
 
 const CommonInterval = 3600
 
-var Handlers = []struct {
+var Handlers []struct {
 	interval int
 	handler  metricHandler
-}{
-	{CommonInterval, handlerAverageRepilicas},
-	{CommonInterval, handlerFileAndSpower},
-	{CommonInterval, handlerReplicaCntBySize},
-	{CommonInterval, handlerReplicaCntByCreateTime},
-	{CommonInterval, handlerFileCntByReplicas},
-	{CommonInterval / 6, HandlerSlotFileCnt},
-	{CommonInterval, handlerFileCntBySize},
-	{CommonInterval, handlerFileCntByCreateTime},
-	{CommonInterval, handlerFileCntByExpireTime},
 }
 var slot uint64
+
+func initHandler(interval int) {
+	Handlers = []struct {
+		interval int
+		handler  metricHandler
+	}{
+		{interval, handlerAverageRepilicas},
+		{interval, handlerFileAndSpower},
+		{interval, handlerReplicaCntBySize},
+		{interval, handlerReplicaCntByCreateTime},
+		{interval, handlerFileCntByReplicas},
+		{interval / 6, HandlerSlotFileCnt},
+		{interval, handlerFileCntBySize},
+		{interval, handlerFileCntByCreateTime},
+		{interval, handlerFileCntByExpireTime},
+	}
+}
 
 func initSlot(start uint64) {
 	index, err := db.GetBlockNumber()
@@ -62,6 +69,7 @@ func handlerFileAndSpower() {
 	chainMetric.SumFileSpower.WithLabelValues("file_size").Set(sumFileSize)
 	chainMetric.SumFileSpower.WithLabelValues("spower").Set(sumSpower)
 	chainMetric.FileRatio.Set(avgSpower / avgFileSize)
+	log.Info("handler File And Spower done")
 }
 
 //按文件大小统计平均副本数
@@ -74,6 +82,7 @@ func handlerReplicaCntBySize() {
 	for _, c := range avgReplicasBySize {
 		chainMetric.AvgReplicasBySize.WithLabelValues(c.name).Set(c.value)
 	}
+	log.Info("handlerReplicaCntBySize done")
 }
 
 //按创建时间统计平均副本数
@@ -95,6 +104,7 @@ func handlerReplicaCntByCreateTime() {
 	for _, c := range avgReplicasByCreateTime {
 		chainMetric.AvgReplicasByCreateTime.WithLabelValues(c.name).Set(c.value)
 	}
+	log.Info("handlerReplicaCntByCreateTime done")
 }
 
 //按副本数量统计文件个数
@@ -107,6 +117,7 @@ func handlerFileCntByReplicas() {
 	for _, c := range fileCntByReplicaSize {
 		chainMetric.FilesCntByReplicas.WithLabelValues(c.name).Set(c.value)
 	}
+	log.Info("handlerFileCntByReplicas done")
 }
 
 //HandlerSlotFileCnt 新增文件数
@@ -126,6 +137,7 @@ func HandlerSlotFileCnt() {
 	log.Debug("file count by replica size", "label", label, "value", cnt)
 	chainMetric.FileCntBySlot.WithLabelValues(label).Set(float64(cnt))
 	slot += chain.SlotSize
+	log.Info("HandlerSlotFileCnt done")
 }
 
 //按文件大小统计文件个数
@@ -138,6 +150,7 @@ func handlerFileCntBySize() {
 	for _, c := range fileCntBySize {
 		chainMetric.FileCntBySize.WithLabelValues(c.name).Set(c.value)
 	}
+	log.Info("handlerFileCntBySize done")
 }
 
 //按创建时间统计文件个数
@@ -159,6 +172,7 @@ func handlerFileCntByCreateTime() {
 	for _, c := range fileCntByCreateTime {
 		chainMetric.FileCntByCreateTime.WithLabelValues(c.name).Set(c.value)
 	}
+	log.Info("handlerFileCntByCreateTime done")
 }
 
 //按文件过期时间统计文件个数
@@ -187,4 +201,5 @@ func handlerFileCntByExpireTime() {
 	for _, c := range fileCntByExpireTime {
 		chainMetric.FileCntByExpireTime.WithLabelValues(c.name).Set(c.value)
 	}
+	log.Info("handlerFileCntByExpireTime done")
 }

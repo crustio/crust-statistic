@@ -24,9 +24,10 @@ type ChainConfig struct {
 }
 
 type MetricConfig struct {
-	GateWay  string
-	Port     int
-	Interval int
+	GateWay      string
+	Port         int
+	Interval     int
+	PushInterval int
 }
 
 type DbConfig struct {

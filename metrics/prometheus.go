@@ -45,7 +45,7 @@ func (c *ChainMetrics) registerMetric() {
 	register.MustRegister(c.getCollector()...)
 	pusher.Gatherer(register)
 	c.pusher = pusher
-	c.scheduler.Every(c.config.Interval).Seconds().Do(func() {
+	c.scheduler.Every(c.config.PushInterval).Seconds().Do(func() {
 		err := c.pusher.Add()
 		if err != nil {
 			log.Error("push metric err", "err", err)
@@ -58,6 +58,7 @@ func (c *ChainMetrics) registerMetric() {
 
 func registerSecheduler(cfg config.MetricConfig) *gocron.Scheduler {
 	s := gocron.NewScheduler(time.UTC)
+	initHandler(cfg.Interval)
 	for _, handler := range Handlers {
 		s.Every(handler.interval).Seconds().Do(handler.handler)
 	}
