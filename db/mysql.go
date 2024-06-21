@@ -2,11 +2,11 @@ package db
 
 import (
 	"fmt"
+	"github.com/ChainSafe/log15"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"gorm.io/sharding"
-	"log"
 	"statistic/config"
 )
 
@@ -37,7 +37,7 @@ func InitMysql(config config.DbConfig) {
 	var err error
 	MysqlDb, err = gorm.Open(dialector, gormConfig)
 	if nil != err {
-		log.Fatalf("models.Setup err: %v", err)
+		log15.Error("models.Setup err: %v", err)
 	}
 
 	middleware := sharding.Register(sharding.Config{
@@ -48,8 +48,9 @@ func InitMysql(config config.DbConfig) {
 	MysqlDb.Use(middleware)
 
 	if err = Migrator(); err != nil {
-		log.Fatalf("migrator err: %v", err)
+		log15.Error("migrator err: %v", err)
 	}
+	log15.Info("complete init db")
 }
 
 func Migrator() error {

@@ -78,7 +78,9 @@ func (f *fetcher) fetchInit() {
 }
 
 func (f *fetcher) fetchKeys() error {
+	f.log.Info("start fetch init")
 	f.fetchInit()
+	f.log.Info("complete fetch init")
 	startIndexKey := f.startKey
 	for {
 		select {
@@ -113,6 +115,7 @@ func (f *fetcher) fetchKeys() error {
 }
 
 func (f *fetcher) handlerFiles() error {
+	f.log.Info("start handler files")
 	for {
 		select {
 		case <-f.stop:

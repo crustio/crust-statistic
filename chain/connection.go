@@ -51,16 +51,14 @@ func (c *connection) Connect() error {
 	}
 	opts := types.SerDeOptions{NoPalletIndices: true}
 	types.SetSerDeOptions(opts)
-
 	c.api = api
-
 	// Fetch metadata
 	meta, err := api.RPC.State.GetMetadataLatest()
 	if err != nil {
 		return err
 	}
 	c.meta = *meta
-	//c.log.Info("Fetched substrate metadata", "meta", meta)
+	c.log.Info("Fetched substrate metadata complete")
 	return nil
 }
 

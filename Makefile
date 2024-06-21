@@ -7,3 +7,6 @@ build:
 
 build-docker: ## Builds a docker image with the binary
 	docker build -t crustio/statistic -f ./Dockerfile .
+
+docker-run:
+	docker run -d --name statistic -v ./config.ini:/app/config.ini    crustio/statistic

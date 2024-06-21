@@ -13,8 +13,11 @@ import (
 	"time"
 )
 
+const TEST = "TEST"
+
 type ChainMetrics struct {
 	fileMetrics
+	sworkerMetrics
 	startCh   <-chan int
 	stop      chan int
 	config    config.MetricConfig
@@ -27,11 +30,12 @@ var chainMetric *ChainMetrics
 func NewChainMetrics(config *config.Config, startCh <-chan int) *ChainMetrics {
 
 	chainMetric = &ChainMetrics{
-		fileMetrics: NewFileMetrics(),
-		startCh:     startCh,
-		stop:        make(chan int),
-		config:      config.Metric,
-		scheduler:   registerSecheduler(config.Metric),
+		fileMetrics:    NewFileMetrics(config.Metric),
+		sworkerMetrics: NewSworkerMetrics(config.Metric),
+		startCh:        startCh,
+		stop:           make(chan int),
+		config:         config.Metric,
+		scheduler:      registerSecheduler(config.Metric),
 	}
 	chainMetric.registerMetric()
 	initSlot(uint64(config.Chain.StartBlock))
@@ -42,7 +46,8 @@ func (c *ChainMetrics) registerMetric() {
 	pusher := push.New(c.config.GateWay, "statistic-metric")
 	pusher.Grouping("service", "statistic")
 	register := prometheus.NewRegistry()
-	register.MustRegister(c.getCollector()...)
+	register.MustRegister(c.getFileCollector()...)
+	register.MustRegister(c.getSworkerCollector()...)
 	pusher.Gatherer(register)
 	c.pusher = pusher
 	c.scheduler.Every(c.config.PushInterval).Seconds().Do(func() {
@@ -53,7 +58,8 @@ func (c *ChainMetrics) registerMetric() {
 			log.Info("push metric success")
 		}
 	})
-	prometheus.MustRegister(c.getCollector()...)
+	prometheus.MustRegister(c.getFileCollector()...)
+	prometheus.MustRegister(c.getSworkerCollector()...)
 }
 
 func registerSecheduler(cfg config.MetricConfig) *gocron.Scheduler {

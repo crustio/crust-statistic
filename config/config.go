@@ -28,6 +28,7 @@ type MetricConfig struct {
 	Port         int
 	Interval     int
 	PushInterval int
+	Env          string
 }
 
 type DbConfig struct {
