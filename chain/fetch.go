@@ -10,6 +10,8 @@ import (
 
 const FileV2Prefix = "0x5ebf094108ead4fefa73f7a3b13cb4a76ed21091d079415ef4a35264c626448d"
 
+const RetryCnt = 5
+
 type fetcher struct {
 	conn       *connection
 	initBlock  uint64
@@ -82,6 +84,7 @@ func (f *fetcher) fetchKeys() error {
 	f.fetchInit()
 	f.log.Info("complete fetch init")
 	startIndexKey := f.startKey
+Main:
 	for {
 		select {
 		case <-f.stop:
@@ -93,12 +96,16 @@ func (f *fetcher) fetchKeys() error {
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			if len(keys) <= 1 {
-				break
+			if len(keys) == 0 {
+				break Main
 			}
 			// remove the startIndexKey
 			if startIndexKey == keys[0] {
-				keys = keys[1:]
+				if len(keys) == 1 {
+					break Main
+				} else {
+					keys = keys[1:]
+				}
 			}
 			list, err := f.conn.GetFilesInfoV2ListWithKeys(keys, f.initHash)
 			if err != nil {
@@ -129,6 +136,7 @@ func (f *fetcher) handlerFiles() error {
 }
 
 func (f *fetcher) complete() {
+	f.log.Info("fetch done")
 	close(f.completeCh)
 }
 
@@ -139,11 +147,26 @@ func (f *fetcher) getCompleteCh() chan int {
 func (f *fetcher) saveFiles(files []*StorageFile) {
 	for _, file := range files {
 		dbFile := file.File.ToFileDto(file.Cid, 0)
-		err := db.SaveFiles(dbFile)
-		if err != nil {
-			f.log.Error("save fileInfoV2 error", "cid", file.Cid, "err", err)
-		} else {
-			f.log.Info("save fileInfoV2 success", "cid", file.Cid)
+		retry := RetryCnt
+		for {
+			err := db.SaveFiles(dbFile)
+			if err != nil {
+				retry--
+				f.log.Error("save fileInfoV2 error", "cid", file.Cid, "err", err)
+				if retry <= 0 {
+					err = db.SaveError(&db.ErrorFile{
+						Cid: file.Cid,
+						Key: file.Key,
+					})
+					if err == nil {
+						break
+					}
+				}
+				time.Sleep(time.Second)
+			} else {
+				break
+				f.log.Info("save fileInfoV2 success", "cid", file.Cid)
+			}
 		}
 	}
 	f.startKey = files[len(files)-1].Key

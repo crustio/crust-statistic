@@ -32,3 +32,15 @@ func TestDB(t *testing.T) {
 	UpdateReplicas(&file)
 
 }
+
+func TestCreateErr(t *testing.T) {
+	InitMysql(getConfig())
+	errfile := &ErrorFile{
+		Cid: "1",
+		Key: "0x",
+	}
+	err := SaveError(errfile)
+	if err != nil {
+		panic(err)
+	}
+}

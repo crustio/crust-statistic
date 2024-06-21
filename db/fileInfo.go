@@ -31,6 +31,26 @@ type Replica struct {
 	CreateAt   uint32
 }
 
+type ErrorFile struct {
+	ID  int    `gorm:"primarykey"`
+	Cid string `gorm:"unique;type:VARCHAR(64)"`
+	Key string `gorm:"type:VARCHAR(300)"`
+}
+
+func SaveError(errFile *ErrorFile) error {
+	err := MysqlDb.Create(errFile).Error
+	if err != nil {
+		if merr, ok := err.(*mysql.MySQLError); ok {
+			if merr.Number != 1062 {
+				return err
+			} else {
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
 func SaveFiles(info *FileInfo) error {
 	e := MysqlDb.Transaction(func(tx *gorm.DB) error {
 		err := MysqlDb.Create(info).Error

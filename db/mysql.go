@@ -58,6 +58,7 @@ func Migrator() error {
 		&CheckPoint{},
 		&FileInfo{},
 		&Replica{},
+		&ErrorFile{},
 	); err != nil {
 		return err
 	}
