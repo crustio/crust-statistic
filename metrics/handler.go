@@ -27,15 +27,15 @@ func initHandler(interval int) {
 		interval int
 		handler  metricHandler
 	}{
-		//{interval, handlerAverageRepilicas},
-		//{interval, handlerFileAndSpower},
-		//{interval, handlerReplicaCntBySize},
-		//{interval, handlerReplicaCntByCreateTime},
-		//{interval, handlerFileCntByReplicas},
-		//{interval / 6, HandlerSlotFileCnt},
-		//{interval, handlerFileCntBySize},
-		//{interval, handlerFileCntByCreateTime},
-		//{interval, handlerFileCntByExpireTime},
+		{interval, handlerAverageRepilicas},
+		{interval, handlerFileAndSpower},
+		{interval, handlerReplicaCntBySize},
+		{interval, handlerReplicaCntByCreateTime},
+		{interval, handlerFileCntByReplicas},
+		{interval / 6, HandlerSlotFileCnt},
+		{interval, handlerFileCntBySize},
+		{interval, handlerFileCntByCreateTime},
+		{interval, handlerFileCntByExpireTime},
 		{interval, handlerSwoker},
 	}
 }
