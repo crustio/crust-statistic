@@ -234,6 +234,7 @@ func (l *listener) updateFiles(ops map[string]int, hash *types.Hash, number uint
 	}
 	var err error
 	for cid, t := range ops {
+		l.log.Info("handler file", "type", t, "cid", cid)
 		//println(cid)
 		switch t {
 		case New:

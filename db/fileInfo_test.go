@@ -23,13 +23,14 @@ func TestDB(t *testing.T) {
 		GroupOwner: "1",
 	}
 	file := FileInfo{
-		Cid:                "QmcUhemhtzTvNtJR58yq2UBJ7tmDAzeaLTiQjxpixnx3oX",
-		FileSize:           18416,
+		Cid:                "QmPwJvYX1xdh4PAxhtf6s8X9iqVXDHUFsisaB27BTVvorH",
+		FileSize:           1,
 		ReportedReplicaCnt: 1,
+		CreateAt:           0,
 		Replicas:           []Replica{rep},
 	}
 	UpdateFile(&file)
-	UpdateReplicas(&file)
+	//UpdateReplicas(&file)
 
 }
 

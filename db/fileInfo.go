@@ -21,8 +21,8 @@ type FileInfo struct {
 }
 
 type Replica struct {
-	ID         int `gorm:"primarykey"`
-	FileId     int
+	ID         int    `gorm:"primarykey"`
+	FileId     int    `gorm:"index:idx_file_id"`
 	GroupOwner string `gorm:"type:VARCHAR(64)"`
 	Who        string `gorm:"type:VARCHAR(64)"`
 	ValidAt    uint32
@@ -50,8 +50,22 @@ func SaveError(errFile *ErrorFile) error {
 	}
 	return nil
 }
-
 func SaveFiles(info *FileInfo) error {
+	file, err := QueryFileByCid(info.Cid)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return saveFiles(info)
+		} else {
+			return err
+		}
+	} else {
+		info.ID = file.ID
+		info.CreateAt = 0
+		return UpdateFile(info)
+	}
+}
+
+func saveFiles(info *FileInfo) error {
 	e := MysqlDb.Transaction(func(tx *gorm.DB) error {
 		err := MysqlDb.Create(info).Error
 		if err != nil {
@@ -143,62 +157,62 @@ func DeleteByCid(cid string) error {
 //	return MysqlDb.Save(re).Error
 //}
 
-func FileCnt() int64 {
+func FileCnt() (int64, error) {
 	var count int64
-	MysqlDb.Table("file_info").Count(&count)
-	return count
+	err := MysqlDb.Table("file_info").Count(&count).Error
+	return count, err
 }
 
-func AvgReplicas() float64 {
+func AvgReplicas() (float64, error) {
 	var avg float64
-	MysqlDb.Table("file_info").
-		Select("avg(reported_replica_cnt)").Scan(&avg)
-	return avg
+	err := MysqlDb.Table("file_info").
+		Select("avg(reported_replica_cnt)").Scan(&avg).Error
+	return avg, err
 }
 
-func AvgReplicasBySize(low uint64, high uint64) float64 {
+func AvgReplicasBySize(low uint64, high uint64) (float64, error) {
 	var avg float64
-	MysqlDb.Table("file_info").
+	err := MysqlDb.Table("file_info").
 		Select("avg(reported_replica_cnt)").
 		Where("file_size >= ?", low).
-		Where("file_size < ?", high).Scan(&avg)
-	return avg
+		Where("file_size < ?", high).Scan(&avg).Error
+	return avg, err
 }
 
-func AvgReplicasByCreateTime(low uint64, high uint64) float64 {
+func AvgReplicasByCreateTime(low uint64, high uint64) (float64, error) {
 	var avg float64
-	MysqlDb.Table("file_info").
+	err := MysqlDb.Table("file_info").
 		Select("avg(reported_replica_cnt)").
 		Where("create_at > ?", low).
-		Where("create_at <= ?", high).Scan(&avg)
-	return avg
+		Where("create_at <= ?", high).Scan(&avg).Error
+	return avg, err
 }
 
-func FileCntByReplicaSize(low uint64, high uint64) int64 {
+func FileCntByReplicaSize(low uint64, high uint64) (int64, error) {
 	var count int64
 	tx := MysqlDb.Table("file_info")
 	if low == 0 && high == 0 {
 		tx.Where("reported_replica_cnt = ?", 0)
 	} else {
-		tx.Where("reported_replica_cnt >= ?", low).
+		tx.Where("reported_replica_cnt > ?", low).
 			Where("reported_replica_cnt <= ?", high)
 	}
-	tx.Count(&count)
-	return count
+	err := tx.Count(&count).Error
+	return count, err
 }
 
-func AvgFileSize() float64 {
+func AvgFileSize() (float64, error) {
 	var avg float64
-	MysqlDb.Table("file_info").
-		Select("avg(file_size)").Scan(&avg)
-	return avg
+	err := MysqlDb.Table("file_info").
+		Select("avg(file_size)").Scan(&avg).Error
+	return avg, err
 }
 
-func AvgSpower() float64 {
+func AvgSpower() (float64, error) {
 	var avg float64
-	MysqlDb.Table("file_info").
-		Select("avg(spower)").Scan(&avg)
-	return avg
+	err := MysqlDb.Table("file_info").
+		Select("avg(spower)").Scan(&avg).Error
+	return avg, err
 }
 
 func FileCntBySlot(slot uint64) (int64, error) {
@@ -210,26 +224,26 @@ func FileCntBySlot(slot uint64) (int64, error) {
 	return count, err
 }
 
-func FileCntBySize(low uint64, high uint64) int64 {
+func FileCntBySize(low uint64, high uint64) (int64, error) {
 	var count int64
-	MysqlDb.Table("file_info").
+	err := MysqlDb.Table("file_info").
 		Where("file_size >= ?", low).
-		Where("file_size < ?", high).Count(&count)
-	return count
+		Where("file_size < ?", high).Count(&count).Error
+	return count, err
 }
 
-func FileCntByCreateTime(low uint64, high uint64) int64 {
+func FileCntByCreateTime(low uint64, high uint64) (int64, error) {
 	var count int64
-	MysqlDb.Table("file_info").
+	err := MysqlDb.Table("file_info").
 		Where("create_at > ?", low).
-		Where("create_at <= ?", high).Count(&count)
-	return count
+		Where("create_at <= ?", high).Count(&count).Error
+	return count, err
 }
 
-func FileCntByExpireTime(low uint64, high uint64) int64 {
+func FileCntByExpireTime(low uint64, high uint64) (int64, error) {
 	var count int64
-	MysqlDb.Table("file_info").
+	err := MysqlDb.Table("file_info").
 		Where("expired_at > ?", low).
-		Where("expired_at <= ?", high).Count(&count)
-	return count
+		Where("expired_at <= ?", high).Count(&count).Error
+	return count, err
 }

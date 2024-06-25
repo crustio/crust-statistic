@@ -7,17 +7,17 @@ import (
 )
 
 type fileMetrics struct {
-	FilesCnt                prometheus.Gauge
-	AvgReplicas             prometheus.Gauge
-	AvgReplicasBySize       *prometheus.GaugeVec
-	AvgReplicasByCreateTime *prometheus.GaugeVec
-	FilesCntByReplicas      *prometheus.GaugeVec
-	SumFileSpower           *prometheus.GaugeVec
-	FileRatio               prometheus.Gauge
-	FileCntBySlot           *prometheus.GaugeVec
-	FileCntBySize           *prometheus.GaugeVec
-	FileCntByCreateTime     *prometheus.GaugeVec
-	FileCntByExpireTime     *prometheus.GaugeVec
+	filesCnt                prometheus.Gauge
+	avgReplicas             prometheus.Gauge
+	avgReplicasBySize       *prometheus.GaugeVec
+	avgReplicasByCreateTime *prometheus.GaugeVec
+	filesCntByReplicas      *prometheus.GaugeVec
+	sumFileSpower           *prometheus.GaugeVec
+	fileRatio               prometheus.Gauge
+	fileCntBySlot           *prometheus.GaugeVec
+	fileCntBySize           *prometheus.GaugeVec
+	fileCntByCreateTime     *prometheus.GaugeVec
+	fileCntByExpireTime     *prometheus.GaugeVec
 }
 
 func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
@@ -26,68 +26,68 @@ func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
 		prefix = "Test_"
 	}
 	return fileMetrics{
-		FilesCnt: prometheus.NewGauge(prometheus.GaugeOpts{
+		filesCnt: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: prefix + "FilesCnt",
 			Help: "Number of file",
 		}),
-		AvgReplicas: prometheus.NewGauge(prometheus.GaugeOpts{
+		avgReplicas: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: prefix + "AvgReplicas",
 			Help: "Average Number of file replicas",
 		}),
-		AvgReplicasBySize: prometheus.NewGaugeVec(
+		avgReplicasBySize: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "AvgReplicasBySize",
 				Help: "average number of file replicas by file size",
 			},
 			[]string{"size"},
 		),
-		AvgReplicasByCreateTime: prometheus.NewGaugeVec(
+		avgReplicasByCreateTime: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "AvgReplicasByCreateTime",
 				Help: "average number of file replicas by create time",
 			},
 			[]string{"createTime"},
 		),
-		FilesCntByReplicas: prometheus.NewGaugeVec(
+		filesCntByReplicas: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FilesCntByReplicas",
 				Help: "Number of file by replica size",
 			},
 			[]string{"replicas"},
 		),
-		SumFileSpower: prometheus.NewGaugeVec(
+		sumFileSpower: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "SumFileSpower",
 				Help: "File size and Spower(PB)",
 			},
 			[]string{"type"},
 		),
-		FileRatio: prometheus.NewGauge(prometheus.GaugeOpts{
+		fileRatio: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: prefix + "FileRatio",
 			Help: "Ratio of spower to file size ",
 		}),
-		FileCntBySlot: prometheus.NewGaugeVec(
+		fileCntBySlot: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntBySlot",
 				Help: "Number of file by slot",
 			},
 			[]string{"slot"},
 		),
-		FileCntBySize: prometheus.NewGaugeVec(
+		fileCntBySize: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntBySize",
 				Help: "Number of file by size",
 			},
 			[]string{"size"},
 		),
-		FileCntByCreateTime: prometheus.NewGaugeVec(
+		fileCntByCreateTime: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntByCreateTime",
 				Help: "Number of file by create time",
 			},
 			[]string{"create"},
 		),
-		FileCntByExpireTime: prometheus.NewGaugeVec(
+		fileCntByExpireTime: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntByExpireTime",
 				Help: "Number of file by expire time",
@@ -99,16 +99,16 @@ func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
 
 func (f *fileMetrics) getFileCollector() []prometheus.Collector {
 	return []prometheus.Collector{
-		f.AvgReplicasByCreateTime,
-		f.AvgReplicasBySize,
-		f.FilesCnt,
-		f.AvgReplicas,
-		f.FilesCntByReplicas,
-		f.SumFileSpower,
-		f.FileRatio,
-		f.FileCntBySlot,
-		f.FileCntBySize,
-		f.FileCntByCreateTime,
-		f.FileCntByExpireTime,
+		f.avgReplicasByCreateTime,
+		f.avgReplicasBySize,
+		f.filesCnt,
+		f.avgReplicas,
+		f.filesCntByReplicas,
+		f.sumFileSpower,
+		f.fileRatio,
+		f.fileCntBySlot,
+		f.fileCntBySize,
+		f.fileCntByCreateTime,
+		f.fileCntByExpireTime,
 	}
 }

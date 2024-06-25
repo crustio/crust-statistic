@@ -1,7 +1,9 @@
 package chain
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"github.com/crustio/go-substrate-rpc-client/v4/types"
 	"github.com/crustio/scale.go/utiles"
 	"github.com/decred/base58"
@@ -15,6 +17,44 @@ const SlotSize = 600
 func convertAccount(hex string) string {
 	bytes := utiles.HexToBytes(hex)
 	return SS58Encode(bytes, config.NetworkID)
+}
+
+func encodeAccount(bytes []byte) string {
+	return SS58Encode(bytes, config.NetworkID)
+}
+
+func SS58Decode(address string) (uint16, []byte, error) {
+	// Adapted from https://github.com/paritytech/substrate/blob/e6def65920d30029e42d498cb07cec5dd433b927/primitives/core/src/crypto.rs#L264
+
+	data := base58.Decode(address)
+	if len(data) < 2 {
+		return 0, nil, fmt.Errorf("expected at least 2 bytes in base58 decoded address")
+	}
+
+	prefixLen := int8(0)
+	ident := uint16(0)
+	if data[0] <= 63 {
+		prefixLen = 1
+		ident = uint16(data[0])
+	} else if data[0] < 127 {
+		lower := (data[0] << 2) | (data[1] >> 6)
+		upper := data[1] & 0b00111111
+		prefixLen = 2
+		ident = uint16(lower) | (uint16(upper) << 8)
+	} else {
+		return 0, nil, fmt.Errorf("invalid address")
+	}
+
+	checkSumLength := 2
+	hash := ss58hash(data[:len(data)-checkSumLength])
+	checksum := hash[:checkSumLength]
+
+	givenChecksum := data[len(data)-checkSumLength:]
+	if !bytes.Equal(givenChecksum, checksum) {
+		return 0, nil, fmt.Errorf("checksum mismatch: expected %v but got %v", checksum, givenChecksum)
+	}
+
+	return ident, data[prefixLen : len(data)-checkSumLength], nil
 }
 
 func SS58Encode(pubkey []byte, format uint16) string {
@@ -112,7 +152,22 @@ func parseCid(key string) string {
 	return cid
 }
 
-func generateKey(meta *types.Metadata, cid []byte) (string, error) {
+func parseAnchor(key string) string {
+	start := len(SworkReportsPrefix) + 20
+	tmp := key[start:]
+	return "0x" + tmp
+}
+
+func parseHexAccountId(key string) string {
+	tmp := key[66+32:]
+	return "0x" + tmp
+}
+
+func parseAccountId(acc []byte) []byte {
+	return acc[32+16:]
+}
+
+func generateFileKey(meta *types.Metadata, cid []byte) (string, error) {
 	bytes, _ := types.EncodeToBytes(cid)
 	storageKey, err := types.CreateStorageKey(meta, "Market", "FilesV2", bytes)
 	if err != nil {

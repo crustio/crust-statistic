@@ -15,7 +15,7 @@ const TestKey = "0x5ebf094108ead4fefa73f7a3b13cb4a76ed21091d079415ef4a35264c6264
 const TestCID = "bafkreidygnk6u5bvcuc6ivapsxgwpck5qnbq77wqtrgtwu7ryy5g4ibaku"
 const TestUrl = "wss://rpc2-subscan.crust.network"
 
-const TestCID2 = "QmcUhemhtzTvNtJR58yq2UBJ7tmDAzeaLTiQjxpixnx3oX"
+const TestCID2 = "QmPpivKGMs3BtszW9ekQKz3PsYJa9AvtqaoFBprJ3tzUbR"
 
 var PREFIX = "0x5ebf094108ead4fefa73f7a3b13cb4a76ed21091d079415ef4a35264c626448d"
 
@@ -26,6 +26,11 @@ func TestParseCid(t *testing.T) {
 	}
 }
 
+func TestCidHex(t *testing.T) {
+	bs := []byte(TestCID2)
+	println(types.HexEncodeToString(bs))
+}
+
 func TestGenerateKey(t *testing.T) {
 	api, _ := gsrpc.NewSubstrateAPI(TestUrl)
 	hash, err := api.RPC.Chain.GetBlockHash(3979347)
@@ -33,7 +38,7 @@ func TestGenerateKey(t *testing.T) {
 	if err != nil {
 		t.Fatal("get meta error")
 	}
-	key, err := generateKey(meta, []byte(TestCID))
+	key, err := generateFileKey(meta, []byte(TestCID))
 	if err != nil {
 		t.Fatal("generate error", err)
 	}
@@ -46,7 +51,7 @@ func TestQueryKey(t *testing.T) {
 	if err != nil {
 		t.Fatal("get meta error")
 	}
-	key, err := generateKey(meta, []byte(TestCID))
+	key, err := generateFileKey(meta, []byte(TestCID))
 	hash, err := api.RPC.Chain.GetBlockHash(15090000)
 	strs, err := api.RPC.State.GetKeysPaged(PREFIX, 2, key, &hash)
 	if err != nil {

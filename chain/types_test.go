@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"github.com/crustio/scale.go/utiles"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -12,4 +13,12 @@ const TestAcc = "cTGaWK3pHpExP1cyrZNArNfWAWidtPCZx29mTNbDY3Yy9R9HG"
 func TestConvert(t *testing.T) {
 	val := convertAccount(TestHex)
 	assert.Equal(t, val, TestAcc)
+}
+
+func TestDecode(t *testing.T) {
+	_, bs, err := SS58Decode(TestAcc)
+	if err != nil {
+		panic(err)
+	}
+	println(utiles.BytesToHex(bs))
 }

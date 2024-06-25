@@ -84,7 +84,7 @@ func (c *connection) GetEvents(meta *types.Metadata, hash *types.Hash) (*Events,
 }
 
 func (c *connection) GetFilesInfoV2(cid string, hash *types.Hash) (*FileInfoV2, error) {
-	key, err := c.generateKey([]byte(cid))
+	key, err := c.generateFileKey([]byte(cid))
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (c *connection) GetFilesInfoV2ListWithCids(cids []string, hash *types.Hash)
 	query := make([]types.StorageKey, 0, len(cids))
 	keys := make(map[string]string)
 	for _, cid := range cids {
-		key, err := c.generateStorageKey(cid)
+		key, err := c.generateFileStorageKey(cid)
 		if err != nil {
 			return nil, err
 		}
@@ -129,7 +129,7 @@ func (c *connection) GetFilesInfoV2ListWithCids(cids []string, hash *types.Hash)
 			number = len(query)
 		}
 		subQuery := query[0:number]
-		subRes, err := c.queryStorages(subQuery, hash, keys)
+		subRes, err := c.queryFileStorages(subQuery, hash, keys)
 		if err != nil {
 			return nil, err
 		}
@@ -154,10 +154,10 @@ func (c *connection) GetFilesInfoV2ListWithKeys(hexKeys []string, hash *types.Ha
 		query = append(query, types.MustHexDecodeString(key))
 		keys[key] = cid
 	}
-	return c.queryStorages(query, hash, keys)
+	return c.queryFileStorages(query, hash, keys)
 }
 
-func (c *connection) queryStorages(query []types.StorageKey, hash *types.Hash, keys map[string]string) ([]*StorageFile, error) {
+func (c *connection) queryFileStorages(query []types.StorageKey, hash *types.Hash, keys map[string]string) ([]*StorageFile, error) {
 	resp, err := c.QueryStorageAt(query, hash)
 	if err != nil {
 		return nil, err
@@ -210,10 +210,14 @@ func (c *connection) GetLatestHeight() uint64 {
 	return uint64(header.Number)
 }
 
-func (c *connection) generateKey(cid []byte) (string, error) {
-	return generateKey(&c.meta, cid)
+func (c *connection) generateFileKey(cid []byte) (string, error) {
+	return generateFileKey(&c.meta, cid)
 }
 
-func (c *connection) generateStorageKey(cid string) (types.StorageKey, error) {
+func (c *connection) generateKey(prefix, method string, args ...[]byte) (types.StorageKey, error) {
+	return types.CreateStorageKey(&c.meta, prefix, method, args...)
+}
+
+func (c *connection) generateFileStorageKey(cid string) (types.StorageKey, error) {
 	return getCidStorageKey(&c.meta, cid)
 }

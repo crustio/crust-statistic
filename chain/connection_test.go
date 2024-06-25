@@ -15,7 +15,7 @@ func TestQueryKeysFile(t *testing.T) {
 	if err != nil {
 		t.Fatal("get meta error")
 	}
-	key, err := generateKey(meta, []byte(TestCID))
+	key, err := generateFileKey(meta, []byte(TestCID))
 	hash, err := api.RPC.Chain.GetBlockHash(15090000)
 	strs, err := api.RPC.State.GetKeysPaged(PREFIX, 100, key, &hash)
 

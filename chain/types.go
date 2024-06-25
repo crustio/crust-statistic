@@ -152,3 +152,51 @@ type CidExt struct {
 	V1  types.U64
 	V2  types.U64
 }
+
+type WorkReport struct {
+	Slot     uint64
+	Spower   uint64
+	Free     uint64
+	FileSize uint64
+	SrdRoot  types.Bytes
+	FileRoot types.Bytes
+	Anchor   string
+}
+
+func (w *WorkReport) ToDto() *db.WorkReport {
+	reportDto := &db.WorkReport{
+		Slot:     w.Slot,
+		Spower:   w.Spower,
+		Free:     w.Free,
+		FileSize: w.FileSize,
+		SrdRoot:  types.HexEncodeToString(w.SrdRoot),
+		FileRoot: types.HexEncodeToString(w.FileRoot),
+		Anchor:   w.Anchor,
+	}
+	if w.Free == 0 {
+		reportDto.Ratio = 100
+	} else {
+		reportDto.Ratio = float64(reportDto.FileSize) / float64(reportDto.Free) * 100
+	}
+	return reportDto
+}
+
+type Group struct {
+	Members   []types.AccountID
+	AllowList []types.AccountID
+	GId       string
+}
+
+type Identity struct {
+	Anchor             []byte
+	PunishmentDeadline uint64
+	Group              types.AccountID
+}
+
+func (w *Group) ToDto(active int) *db.SworkerGroup {
+	return &db.SworkerGroup{
+		GId:       w.GId,
+		AllMember: len(w.Members),
+		Active:    active,
+	}
+}

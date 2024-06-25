@@ -59,6 +59,8 @@ func Migrator() error {
 		&FileInfo{},
 		&Replica{},
 		&ErrorFile{},
+		&WorkReport{},
+		&SworkerGroup{},
 	); err != nil {
 		return err
 	}

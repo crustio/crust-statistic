@@ -8,6 +8,9 @@ var fileCntByReplicaSize []*condition
 var fileCntBySize []*condition
 var fileCntByCreateTime []*condition
 var fileCntByExpireTime []*condition
+var swokerRatio []*condition
+var groupCntByMemberCnt []*condition
+var groupCntByActiveCnt []*condition
 
 func init() {
 	avgReplicasBySize = []*condition{
@@ -84,11 +87,44 @@ func init() {
 		{"3个月~5个月", 1296000, 2160000, 0},
 		{">5个月", 2160000, math.MaxUint64, 0},
 	}
+
+	swokerRatio = []*condition{
+		{"0%", 0, 0, 0},
+		{"0~0.1%", 0, 0.1, 0},
+		{"0.1~0.3%", 0.1, 0.3, 0},
+		{"0.3~1%", 0.3, 1, 0},
+		{"1~3%", 1, 3, 0},
+		{"3~10%", 3, 10, 0},
+		{"10~30%", 10, 30, 0},
+		{"30~50%", 30, 50, 0},
+		{">50%", 50, math.MaxUint64, 0},
+	}
+	groupCntByMemberCnt = []*condition{
+		{"0", 0, 0, 0},
+		{"1", 1, 1, 0},
+		{"2~5", 2, 5, 0},
+		{"5~10", 5, 10, 0},
+		{"10~20", 10, 20, 0},
+		{"20~50", 20, 50, 0},
+		{"50~100", 50, 100, 0},
+		{">100", 100, math.MaxUint64, 0},
+	}
+
+	groupCntByActiveCnt = []*condition{
+		{"0", 0, 0, 0},
+		{"1", 1, 1, 0},
+		{"2~5", 2, 5, 0},
+		{"5~10", 5, 10, 0},
+		{"10~20", 10, 20, 0},
+		{"20~50", 20, 50, 0},
+		{"50~100", 50, 100, 0},
+		{">100", 100, math.MaxUint64, 0},
+	}
 }
 
 type condition struct {
 	name  string
-	low   uint64
-	high  uint64
+	low   float64
+	high  float64
 	value float64
 }
