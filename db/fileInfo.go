@@ -10,7 +10,7 @@ type FileInfo struct {
 	Cid                string `gorm:"unique;type:VARCHAR(64)"`
 	FileSize           uint64 `gorm:"index:idx_file_size"`
 	Spower             uint64
-	ExpiredAt          uint32
+	ExpiredAt          uint32 `gorm:"index:idx_file_expire"`
 	CreateAt           uint32 `gorm:"index:idx_file_create"`
 	CalculatedAt       uint32
 	Amount             string `gorm:"type:VARCHAR(128)"`
