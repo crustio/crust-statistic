@@ -51,6 +51,7 @@ func (c *ChainMetrics) registerMetric() {
 	pusher.Gatherer(register)
 	c.pusher = pusher
 	c.scheduler.Every(c.config.PushInterval).Seconds().Do(func() {
+		time.Sleep(time.Minute)
 		err := c.pusher.Add()
 		if err != nil {
 			log.Error("push metric err", "err", err)
