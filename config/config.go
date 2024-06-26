@@ -29,6 +29,8 @@ type MetricConfig struct {
 	Interval     int
 	PushInterval int
 	Env          string
+	Codes        []string
+	Versions     []string
 }
 
 type DbConfig struct {
@@ -84,6 +86,9 @@ func loadConfig(filePath string, config *Config) error {
 	config.Chain = chain
 	config.Db = db
 	config.Metric = metric
+	if len(metric.Codes) != len(metric.Versions) {
+		panic("metric codes versions length error")
+	}
 
 	return nil
 }

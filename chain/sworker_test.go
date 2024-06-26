@@ -18,6 +18,8 @@ const MemberId = "cTGkqTGTysCxiPqERDyj5BcMxeeQgZGkT7E7GAMwCCzLaatry"
 
 const anchor = "0xb4389d9844e4c9c8846f439f15e331fd8dc8cec752e27f643c969757be1cfb38d3d5188eb4b88b8d33d5608100964ed23aa4cef1845cbd90ecfe2c9a15ae9efb"
 
+const ActiveAnchor = "0xbc46c627c337a2a4ed18645a8c2de7a49f7eb597e9543344b71c6c6d0a2331c8bafd32d2fca0a2c5f8f06ab232e62624c8b3e911dccd4d122440be5454cc90aa"
+
 func getConfig() config.DbConfig {
 	return config.DbConfig{
 		Type:        "mysql",
@@ -48,7 +50,7 @@ func TestSworkKey(t *testing.T) {
 	hash, err := api.RPC.Chain.GetBlockHash(15270000)
 	data, err := api.RPC.State.GetStorageRaw(key, hash)
 
-	val := &WorkReport{}
+	val := &workReport{}
 	err = types.DecodeFromBytes(*data, val)
 	if err != nil {
 		panic(err)
@@ -74,7 +76,7 @@ func TestGroups(t *testing.T) {
 	hash, err := conn.api.RPC.Chain.GetBlockHashLatest()
 	data, err := conn.api.RPC.State.GetStorageRaw(key, hash)
 	fmt.Printf("%v", data)
-	val := &Group{}
+	val := &group{}
 	err = types.DecodeFromBytes(*data, val)
 	if err != nil {
 		panic(err)
@@ -119,10 +121,46 @@ func TestIdentity(t *testing.T) {
 	hash, err := conn.api.RPC.Chain.GetBlockHashLatest()
 	data, err := conn.api.RPC.State.GetStorageRaw(key, hash)
 	fmt.Printf("%v\n", data)
-	val := &Identity{}
+	val := &identity{}
 	err = types.DecodeFromBytes(*data, val)
 	if err != nil {
 		panic(err)
 	}
 	println(types.HexEncodeToString(val.Anchor))
+}
+
+func TestVersion(t *testing.T) {
+	stop := make(chan int)
+	conn := NewConnection(TestUrl, log.Root(), stop)
+	conn.Connect()
+	ab := types.MustHexDecodeString(ActiveAnchor)
+	anchorByte, _ := types.EncodeToBytes(ab)
+	key, err := conn.generateKey("Swork", "PubKeys", anchorByte)
+	println(types.HexEncodeToString(key))
+	if err != nil {
+		panic(err)
+	}
+	hash, err := conn.api.RPC.Chain.GetBlockHashLatest()
+	data, err := conn.api.RPC.State.GetStorageRaw(key, hash)
+	val := &pubInfo{}
+	err = types.DecodeFromBytes(*data, val)
+	if err != nil {
+		panic(err)
+	}
+	println(types.HexEncodeToString(val.Code))
+	_, bs := val.Anchor.Unwrap()
+	assert.Equal(t, ActiveAnchor, types.HexEncodeToString(bs))
+	//fmt.Printf("%v", val)
+}
+
+func TestGetVersion(t *testing.T) {
+	stop := make(chan int)
+	conn := NewConnection(TestUrl, log.Root(), stop)
+	conn.Connect()
+	db.InitMysql(getConfig())
+	err := GetPubKeys(conn)
+	if err != nil {
+		panic(err)
+	}
+
 }

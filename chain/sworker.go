@@ -10,6 +10,8 @@ const SworkReportsPrefix = "0x2e3b7ab5757e6bbf28d3df3b5e01d6b9b7e949778e4650a54f
 
 const GroupPrefix = "0x2e3b7ab5757e6bbf28d3df3b5e01d6b92f583424865f2346c0f5c066f24dd499"
 
+const PubKeysPrefix = "0x2e3b7ab5757e6bbf28d3df3b5e01d6b903a855d33d7969c08d438e66ce6f999e"
+
 func GetGroupInfo(conn *connection) error {
 	startKey := GroupPrefix
 	hash, err := conn.api.RPC.Chain.GetBlockHashLatest()
@@ -42,11 +44,11 @@ func GetGroupInfo(conn *connection) error {
 			return e
 		}
 		data := make(map[string]string)
-		gs := make([]*Group, 0, len(keys))
+		gs := make([]*group, 0, len(keys))
 		subQuery := make([]types.StorageKey, 0, 800)
 		for _, set := range resp {
 			for _, change := range set.Changes {
-				val := &Group{}
+				val := &group{}
 				err = types.DecodeFromBytes(change.StorageData, val)
 				if err != nil {
 					return err
@@ -77,7 +79,7 @@ func GetGroupInfo(conn *connection) error {
 	return nil
 }
 
-func saveGroups(groups []*Group, data map[string]string) error {
+func saveGroups(groups []*group, data map[string]string) error {
 	dbg := make([]*db.SworkerGroup, 0, len(groups))
 	var err error
 	for _, group := range groups {
@@ -109,7 +111,7 @@ func queryMember(subQuery []types.StorageKey, conn *connection, hash *types.Hash
 	}
 	for _, set := range resp {
 		for _, change := range set.Changes {
-			val := &Identity{}
+			val := &identity{}
 			err := types.DecodeFromBytes(change.StorageData, val)
 			if err != nil {
 				return err
@@ -163,7 +165,7 @@ func GetAllSworkReports(conn *connection) (int, int, error) {
 		res := make([]*db.WorkReport, 0, len(query))
 		for _, set := range resp {
 			for _, change := range set.Changes {
-				val := &WorkReport{}
+				val := &workReport{}
 				err = types.DecodeFromBytes(change.StorageData, val)
 				if err != nil {
 					return 0, 0, err
@@ -187,3 +189,108 @@ func GetAllSworkReports(conn *connection) (int, int, error) {
 	}
 	return allCount, activeCount, nil
 }
+
+func GetPubKeys(conn *connection) error {
+	startKey := PubKeysPrefix
+	hash, err := conn.api.RPC.Chain.GetBlockHashLatest()
+	if err != nil {
+		return err
+	}
+	for {
+		keys, err := conn.api.RPC.State.GetKeysPaged(PubKeysPrefix, 800, startKey, &hash)
+		if err != nil {
+			return err
+		}
+		if len(keys) == 0 {
+			break
+		}
+		// remove the startIndexKey
+		if startKey == keys[0] {
+			if len(keys) == 1 {
+				break
+			} else {
+				keys = keys[1:]
+			}
+		}
+		query := make([]types.StorageKey, 0, len(keys))
+		for _, key := range keys {
+			query = append(query, types.MustHexDecodeString(key))
+		}
+		resp, e := conn.QueryStorageAt(query, &hash)
+		if e != nil {
+			return e
+		}
+		res := make([]*db.PubKey, 0, len(query))
+		for _, set := range resp {
+			for _, change := range set.Changes {
+				val := &pubInfo{}
+				err = types.DecodeFromBytes(change.StorageData, val)
+				if err != nil {
+					return err
+				}
+				res = append(res, val.ToDto())
+			}
+		}
+
+		err = db.SavePubKeys(res)
+		if err != nil {
+			return err
+		}
+		startKey = keys[len(keys)-1]
+		//log.Debug("get pub keys ", "cnt", len(keys))
+	}
+	return nil
+}
+
+//
+//func GetVersionData(conn *connection) (map[string]int, error) {
+//	anchors, err := db.ActiveAnchors()
+//	if err != nil {
+//		return nil, err
+//	}
+//	hash, err := conn.api.RPC.Chain.GetBlockHashLatest()
+//	queryKeys := make([]types.StorageKey, 0, 1000)
+//	resMap := make(map[string]int)
+//	for _, anchor := range anchors {
+//		ab := types.MustHexDecodeString(anchor)
+//		anchorByte, _ := types.EncodeToBytes(ab)
+//		key, err := conn.generateKey("Swork", "PubKeys", anchorByte)
+//		if err != nil {
+//			continue
+//		}
+//		queryKeys = append(queryKeys, key)
+//		if len(queryKeys) >= 900 {
+//			err = queryVersion(queryKeys, conn, &hash, resMap)
+//			if err != nil {
+//				return nil, err
+//			}
+//			queryKeys = make([]types.StorageKey, 0, 1000)
+//		}
+//	}
+//	err = queryVersion(queryKeys, conn, &hash, resMap)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return resMap, nil
+//}
+//
+//func queryVersion(subQuery []types.StorageKey, conn *connection, hash *types.Hash, data map[string]int) error {
+//	log.Debug("query pubInfo", "count", len(subQuery))
+//	resp, e := conn.QueryStorageAt(subQuery, hash)
+//	if e != nil {
+//		return e
+//	}
+//	for _, set := range resp {
+//		for _, change := range set.Changes {
+//			val := &pubInfo{}
+//			err := types.DecodeFromBytes(change.StorageData, val)
+//			if err != nil {
+//				return err
+//			}
+//			vcode := types.HexEncodeToString(val.Code)
+//			data[vcode] += 1
+//		}
+//	}
+//	log.Debug("query pubInfo done")
+//	return nil
+//}

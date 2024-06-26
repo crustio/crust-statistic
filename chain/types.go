@@ -153,7 +153,7 @@ type CidExt struct {
 	V2  types.U64
 }
 
-type WorkReport struct {
+type workReport struct {
 	Slot     uint64
 	Spower   uint64
 	Free     uint64
@@ -163,7 +163,7 @@ type WorkReport struct {
 	Anchor   string
 }
 
-func (w *WorkReport) ToDto() *db.WorkReport {
+func (w *workReport) ToDto() *db.WorkReport {
 	reportDto := &db.WorkReport{
 		Slot:     w.Slot,
 		Spower:   w.Spower,
@@ -181,22 +181,39 @@ func (w *WorkReport) ToDto() *db.WorkReport {
 	return reportDto
 }
 
-type Group struct {
+type group struct {
 	Members   []types.AccountID
 	AllowList []types.AccountID
 	GId       string
 }
 
-type Identity struct {
+type identity struct {
 	Anchor             []byte
 	PunishmentDeadline uint64
-	Group              types.AccountID
+	Group              types.OptionBytes32
 }
 
-func (w *Group) ToDto(active int) *db.SworkerGroup {
+func (w *group) ToDto(active int) *db.SworkerGroup {
 	return &db.SworkerGroup{
 		GId:       w.GId,
 		AllMember: len(w.Members),
 		Active:    active,
+	}
+}
+
+type pubInfo struct {
+	Code   []byte
+	Anchor types.OptionBytes
+}
+
+func (p *pubInfo) ToDto() *db.PubKey {
+	anchor := "0x"
+	ok, val := p.Anchor.Unwrap()
+	if ok {
+		anchor = types.HexEncodeToString(val)
+	}
+	return &db.PubKey{
+		Code:   types.HexEncodeToString(p.Code),
+		Anchor: anchor,
 	}
 }

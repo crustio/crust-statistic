@@ -267,6 +267,7 @@ func handlerSwoker() {
 	log.Info("get swork report done")
 	go handlerStorage(all, active)
 	go handlerSwokerByRatio()
+	go handlerSworkerVersion()
 	err = chain.GetGroupInfo(chain.DefaultConn)
 	if err != nil {
 		log.Error("get group info error", "err", err)
@@ -373,4 +374,31 @@ func handlerGroupByActiveCnt() {
 		chainMetric.groupCntByActiveSworkerCnt.WithLabelValues(c.name).Set(c.value)
 	}
 	log.Info("GroupCntByActiveSworkerCnt done")
+}
+
+func handlerSworkerVersion() {
+	err := chain.GetPubKeys(chain.DefaultConn)
+	if err != nil {
+		log.Error("get pub keys error", "err", err)
+		return
+	}
+	codes, err := db.GetVersionCnt()
+	if err != nil {
+		log.Error("db version cnt error", "err", err)
+		return
+	}
+
+	versionCnt := make(map[string]int)
+	for _, code := range codes {
+		if version, ok := versionMap[code.Code]; ok {
+			versionCnt[version] += code.Cnt
+		} else {
+			versionCnt[versionMap["0x"]] += code.Cnt
+		}
+	}
+
+	for version, cnt := range versionCnt {
+		chainMetric.sworkerByVersion.WithLabelValues(version).Set(float64(cnt))
+	}
+	log.Info("sworker version done")
 }

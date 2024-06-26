@@ -30,6 +30,10 @@ func ClearSworker() error {
 	if err != nil {
 		return err
 	}
+	err = MysqlDb.Exec("truncate table pub_key").Error
+	if err != nil {
+		return err
+	}
 	return MysqlDb.Exec("truncate table work_report").Error
 }
 
@@ -132,4 +136,36 @@ func GroupCntByActive(low uint64, high uint64) (int64, error) {
 	}
 	err := tx.Count(&count).Error
 	return count, err
+}
+
+func ActiveAnchors() ([]string, error) {
+	var res []string
+	err := MysqlDb.Raw("select anchor from work_report").Scan(&res).Error
+	return res, err
+}
+
+type PubKey struct {
+	ID     int    `gorm:"primarykey" json:"id"`
+	Code   string `gorm:"type:VARCHAR(66)"`
+	Anchor string `gorm:"index:idx_anchor;type:VARCHAR(130)"`
+}
+
+func SavePubKeys(keys []*PubKey) error {
+	e := MysqlDb.Transaction(func(tx *gorm.DB) error {
+		err := MysqlDb.CreateInBatches(keys, 100).Error
+		return err
+	})
+	return e
+}
+
+type VersionCnt struct {
+	Code string
+	Cnt  int
+}
+
+func GetVersionCnt() ([]VersionCnt, error) {
+	var res []VersionCnt
+	err := MysqlDb.Raw("select pk.code,count(1) as cnt from work_report w left join pub_key pk on w.anchor = pk.anchor group by pk.code").
+		Scan(&res).Error
+	return res, err
 }
