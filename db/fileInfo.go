@@ -54,7 +54,7 @@ func SaveFiles(info *FileInfo, update bool) error {
 	file, err := QueryFileByCid(info.Cid)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return saveFiles(info)
+			return InsertFiles(info)
 		} else {
 			return err
 		}
@@ -66,7 +66,7 @@ func SaveFiles(info *FileInfo, update bool) error {
 	return nil
 }
 
-func saveFiles(info *FileInfo) error {
+func InsertFiles(info *FileInfo) error {
 	e := MysqlDb.Transaction(func(tx *gorm.DB) error {
 		err := MysqlDb.Create(info).Error
 		if err != nil {

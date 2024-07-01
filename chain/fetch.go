@@ -95,12 +95,14 @@ type segFetcher struct {
 	stop       <-chan int
 	initHash   *types.Hash
 	meta       *types.Metadata
+	hashCh     chan *fileMeta
 	fmCh       chan *fileMeta
 	updateSize uint64
 }
 
 type fileMeta struct {
 	blockNumber uint64
+	hash        types.Hash
 	cids        []string
 }
 
@@ -120,6 +122,7 @@ func newSegFetcher(connection *connection, index uint64, end uint64, logger log1
 		hash,
 		nil,
 		make(chan *fileMeta, 10),
+		make(chan *fileMeta, 10),
 		updateSize,
 	}
 }
@@ -130,9 +133,17 @@ func (s *segFetcher) start(wg *sync.WaitGroup) {
 		return
 	}
 	go func() {
+		err := s.fetchHash()
+		if err != nil {
+			s.log.Error("Fetch hash failed", "err", err)
+		}
+		close(s.hashCh)
+	}()
+
+	go func() {
 		err := s.fetchFileMeta()
 		if err != nil {
-			s.log.Error("Fetch files failed", "err", err)
+			s.log.Error("Fetch event failed", "err", err)
 		}
 		close(s.fmCh)
 	}()
@@ -146,7 +157,7 @@ func (s *segFetcher) start(wg *sync.WaitGroup) {
 	}()
 }
 
-func (s *segFetcher) fetchFileMeta() error {
+func (s *segFetcher) fetchHash() error {
 	indexNumber := s.index
 	for {
 		h, err := s.conn.api.RPC.Chain.GetBlockHash(indexNumber)
@@ -181,37 +192,61 @@ Main:
 				time.Sleep(BlockRetryInterval)
 				continue
 			}
-			s.log.Info("process block", "number", indexNumber)
-			err = s.processEvents(&hash, indexNumber)
-			if err != nil {
-				s.log.Error("Failed to process events in block", "number", indexNumber, "err", err)
-				continue
+			fm := &fileMeta{
+				blockNumber: indexNumber,
+				hash:        hash,
 			}
+			s.hashCh <- fm
 			indexNumber++
 			if indexNumber > s.end {
 				break Main
 			}
 		}
 	}
-
 	return nil
 }
 
-func (s *segFetcher) processEvents(hash *types.Hash, number uint64) error {
+func (s *segFetcher) fetchFileMeta() error {
+main:
+	for {
+		select {
+		case <-s.stop:
+			return errors.New("segFetcher terminated")
+		case fm, ok := <-s.hashCh:
+			// Get hash for index block, sleep and retry if not ready
+			if ok {
+				for {
+					s.log.Debug("process block", "number", fm.blockNumber)
+					err := s.processEvents(fm)
+					if err != nil {
+						s.log.Error("Failed to process events in block", "number", fm.blockNumber, "err", err)
+						continue
+					}
+					if fm.blockNumber == s.end {
+						break main
+					}
+					break
+				}
+			} else {
+				break main
+			}
+		}
+	}
+	return nil
+}
+
+func (s *segFetcher) processEvents(fm *fileMeta) error {
 	//now := time.Now().UnixMilli()
-	evts, err := s.conn.GetEvents(s.meta, hash)
+	evts, err := s.conn.GetEvents(s.meta, &fm.hash)
 	//after := time.Now().UnixMilli()
 	//f.log.Info("event", "escape", after-now)
 	if err != nil {
 		return err
 	}
-	fm := &fileMeta{
-		blockNumber: number,
-	}
 	if len(evts.Market_FileSuccess) > 0 {
 		cids := make([]string, 0, len(evts.Market_FileSuccess))
 		for _, evt := range evts.Market_FileSuccess {
-			s.log.Info("get file success event", "cid", string(evt.Cid))
+			s.log.Debug("get file success event", "cid", string(evt.Cid))
 			cids = append(cids, string(evt.Cid))
 		}
 		fm.cids = cids
@@ -219,14 +254,14 @@ func (s *segFetcher) processEvents(hash *types.Hash, number uint64) error {
 	s.fmCh <- fm
 	if len(evts.System_CodeUpdated) > 0 {
 		s.log.Trace("Received CodeUpdated event")
-		meta, err := s.conn.api.RPC.State.GetMetadata(*hash)
+		meta, err := s.conn.api.RPC.State.GetMetadata(fm.hash)
 		if err != nil {
 			s.log.Error("Unable to update Metadata", "err", err)
 		}
 		s.meta = meta
 	}
 
-	s.log.Trace("Finished processing events", "block", hash.Hex())
+	s.log.Trace("Finished processing events", "block", fm.hash.Hex())
 	return nil
 }
 
