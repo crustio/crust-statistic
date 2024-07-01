@@ -60,7 +60,7 @@ func (f *FileInfoV2) ToFileDto(cid string, number uint32) *db.FileInfo {
 				IsReported: replica.IsReported,
 				CreateAt:   replica.CreateAt,
 			})
-			if replicaCreatAt > replica.CreateAt {
+			if replicaCreatAt > replica.CreateAt && replica.CreateAt > 0 {
 				replicaCreatAt = replica.CreateAt
 			}
 		}
