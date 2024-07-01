@@ -6,6 +6,7 @@ var avgReplicasBySize []*condition
 var avgReplicasByCreateTime []*condition
 var fileCntByReplicaSize []*condition
 var fileCntBySize []*condition
+var fileCntBySizeNoneRep []*condition
 var fileCntByCreateTime []*condition
 var fileCntByExpireTime []*condition
 var swokerRatio []*condition
@@ -58,6 +59,19 @@ func init() {
 	}
 
 	fileCntBySize = []*condition{
+		{"0~1KB", 0, 1024, 0},
+		{"1KB~10KB", 1024, 10 * 1024, 0},
+		{"10KB~100KB", 10 * 1024, 100 * 1024, 0},
+		{"100KB~1MB", 100 * 1024, 1024 * 1024, 0},
+		{"1MB~10MB", 1024 * 1024, 10 * 1024 * 1024, 0},
+		{"10MB~30MB", 10 * 1024 * 1024, 30 * 1024 * 1024, 0},
+		{"30MB~100MB", 30 * 1024 * 1024, 100 * 1024 * 1024, 0},
+		{"100MB~300MB", 100 * 1024 * 1024, 300 * 1024 * 1024, 0},
+		{"300MB~1GB", 300 * 1024 * 1024, 1024 * 1024 * 1024, 0},
+		{">1GB", 1024 * 1024 * 1024, math.MaxUint64, 0},
+	}
+
+	fileCntBySizeNoneRep = []*condition{
 		{"0~1KB", 0, 1024, 0},
 		{"1KB~10KB", 1024, 10 * 1024, 0},
 		{"10KB~100KB", 10 * 1024, 100 * 1024, 0},

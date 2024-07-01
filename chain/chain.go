@@ -37,7 +37,7 @@ func NewChain(cfg config.ChainConfig, logger log15.Logger) (*Chain, error) {
 	}
 
 	// Setup fetcher & listener
-	f := NewFetcher(conn, uint32(cfg.Size), initBlock, startBlock, logger, stop)
+	f := NewFetcher(conn, uint64(cfg.Size), initBlock, startBlock, logger, stop, cfg.UpdateSize)
 
 	if startBlock == 0 {
 		startBlock = initBlock + 1

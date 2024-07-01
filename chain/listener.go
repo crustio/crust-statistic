@@ -139,9 +139,7 @@ func (l *listener) processEvents(hash *types.Hash, number uint64) error {
 func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) error {
 	result := make(map[string]int)
 	var err error
-	for _, evt := range evts.Market_FileSuccess {
-		result[string(evt.Cid)] = New
-	}
+
 	for _, evt := range evts.Market_RenewFileSuccess {
 		if _, ok := result[string(evt.Cid)]; !ok {
 			result[string(evt.Cid)] = Update
@@ -180,6 +178,10 @@ func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) e
 				result[cid] = UpdateRep
 			}
 		}
+	}
+
+	for _, evt := range evts.Market_FileSuccess {
+		result[string(evt.Cid)] = New
 	}
 
 	for _, evt := range evts.Market_IllegalFileClosed {

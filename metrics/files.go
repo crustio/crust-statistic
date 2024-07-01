@@ -7,17 +7,18 @@ import (
 )
 
 type fileMetrics struct {
-	filesCnt                prometheus.Gauge
-	avgReplicas             prometheus.Gauge
-	avgReplicasBySize       *prometheus.GaugeVec
-	avgReplicasByCreateTime *prometheus.GaugeVec
-	filesCntByReplicas      *prometheus.GaugeVec
-	sumFileSpower           *prometheus.GaugeVec
-	fileRatio               prometheus.Gauge
-	fileCntBySlot           *prometheus.GaugeVec
-	fileCntBySize           *prometheus.GaugeVec
-	fileCntByCreateTime     *prometheus.GaugeVec
-	fileCntByExpireTime     *prometheus.GaugeVec
+	filesCnt                 prometheus.Gauge
+	avgReplicas              prometheus.Gauge
+	avgReplicasBySize        *prometheus.GaugeVec
+	avgReplicasByCreateTime  *prometheus.GaugeVec
+	filesCntByReplicas       *prometheus.GaugeVec
+	sumFileSpower            *prometheus.GaugeVec
+	fileRatio                prometheus.Gauge
+	fileCntBySlot            *prometheus.GaugeVec
+	fileCntBySize            *prometheus.GaugeVec
+	fileCntBySizeWithNoneRep *prometheus.GaugeVec
+	fileCntByCreateTime      *prometheus.GaugeVec
+	fileCntByExpireTime      *prometheus.GaugeVec
 }
 
 func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
@@ -80,6 +81,13 @@ func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
 			},
 			[]string{"size"},
 		),
+		fileCntBySizeWithNoneRep: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: prefix + "FileCntBySizeWithNoneRep",
+				Help: "Number of file by size with non-zero replicas",
+			},
+			[]string{"size"},
+		),
 		fileCntByCreateTime: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntByCreateTime",
@@ -108,6 +116,7 @@ func (f *fileMetrics) getFileCollector() []prometheus.Collector {
 		f.fileRatio,
 		f.fileCntBySlot,
 		f.fileCntBySize,
+		f.fileCntBySizeWithNoneRep,
 		f.fileCntByCreateTime,
 		f.fileCntByExpireTime,
 	}

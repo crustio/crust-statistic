@@ -60,6 +60,9 @@ func (f *FileInfoV2) ToFileDto(cid string, number uint32) *db.FileInfo {
 				IsReported: replica.IsReported,
 				CreateAt:   replica.CreateAt,
 			})
+			if replicaCreatAt > replica.CreateAt {
+				replicaCreatAt = replica.CreateAt
+			}
 		}
 		fileDto.Replicas = replicas
 	}
@@ -67,11 +70,11 @@ func (f *FileInfoV2) ToFileDto(cid string, number uint32) *db.FileInfo {
 		if f.ExpiredAt > ExpireDuration {
 			number = f.ExpiredAt - ExpireDuration
 		}
-		if number > replicaCreatAt {
-			number = replicaCreatAt
-		}
-		fileDto.CreateAt = number
 	}
+	if number > replicaCreatAt && replicaCreatAt > 0 {
+		number = replicaCreatAt
+	}
+	fileDto.CreateAt = number
 	if f.Spower == 0 {
 		fileDto.Spower = fileDto.FileSize
 	}
@@ -80,12 +83,11 @@ func (f *FileInfoV2) ToFileDto(cid string, number uint32) *db.FileInfo {
 
 func (f *FileInfoV2) ToFileSingleDto(cid string) *db.FileInfo {
 	fileDto := &db.FileInfo{
-		Cid:          cid,
-		FileSize:     f.FileSize,
-		Spower:       f.Spower,
-		ExpiredAt:    f.ExpiredAt,
-		CalculatedAt: f.CalculatedAt,
-
+		Cid:                cid,
+		FileSize:           f.FileSize,
+		Spower:             f.Spower,
+		ExpiredAt:          f.ExpiredAt,
+		CalculatedAt:       f.CalculatedAt,
 		Amount:             f.Amount,
 		Prepaid:            f.Prepaid,
 		ReportedReplicaCnt: f.ReportedReplicaCount,

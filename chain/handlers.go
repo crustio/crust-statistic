@@ -13,7 +13,7 @@ const (
 
 func saveNewFile(fileInfo *FileInfoV2, cid string, number uint64) error {
 	file := fileInfo.ToFileDto(cid, uint32(number))
-	return db.SaveFiles(file)
+	return db.SaveFiles(file, true)
 }
 
 func updateFile(fileInfo *FileInfoV2, cid string) error {

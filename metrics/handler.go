@@ -185,6 +185,19 @@ func handlerFileCntBySize() {
 	for _, c := range fileCntBySize {
 		chainMetric.fileCntBySize.WithLabelValues(c.name).Set(c.value)
 	}
+
+	for _, c := range fileCntBySizeNoneRep {
+		cnt, err := db.FileCntBySizeWithNoneRep(uint64(c.low), uint64(c.high))
+		if err != nil {
+			log.Error("get file count by size with no-zero replicas error", "err", err)
+			return
+		}
+		log.Debug("file count by file size with no-zero replicas", "label", c.name, "value", cnt)
+		c.value = float64(cnt)
+	}
+	for _, c := range fileCntBySizeNoneRep {
+		chainMetric.fileCntBySizeWithNoneRep.WithLabelValues(c.name).Set(c.value)
+	}
 	log.Info("handlerFileCntBySize done")
 }
 

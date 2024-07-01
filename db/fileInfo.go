@@ -50,7 +50,7 @@ func SaveError(errFile *ErrorFile) error {
 	}
 	return nil
 }
-func SaveFiles(info *FileInfo) error {
+func SaveFiles(info *FileInfo, update bool) error {
 	file, err := QueryFileByCid(info.Cid)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -58,11 +58,12 @@ func SaveFiles(info *FileInfo) error {
 		} else {
 			return err
 		}
-	} else {
+	} else if update {
 		info.ID = file.ID
 		info.CreateAt = 0
 		return UpdateFile(info)
 	}
+	return nil
 }
 
 func saveFiles(info *FileInfo) error {
@@ -116,11 +117,8 @@ func UpdateReplicas(info *FileInfo) error {
 		if e = MysqlDb.CreateInBatches(&info.Replicas, len(info.Replicas)).Error; e != nil {
 			return e
 		}
-
-		return MysqlDb.Model(&FileInfo{}).
-			Where("cid = ?", info.Cid).
-			Update("reported_replica_cnt", info.ReportedReplicaCnt).
-			Error
+		info.CreateAt = 0
+		return UpdateFile(info)
 	})
 	return err
 }
@@ -227,6 +225,15 @@ func FileCntBySlot(slot uint64) (int64, error) {
 func FileCntBySize(low uint64, high uint64) (int64, error) {
 	var count int64
 	err := MysqlDb.Table("file_info").
+		Where("file_size >= ?", low).
+		Where("file_size < ?", high).Count(&count).Error
+	return count, err
+}
+
+func FileCntBySizeWithNoneRep(low uint64, high uint64) (int64, error) {
+	var count int64
+	err := MysqlDb.Table("file_info").
+		Where("reported_replica_cnt > 0").
 		Where("file_size >= ?", low).
 		Where("file_size < ?", high).Count(&count).Error
 	return count, err

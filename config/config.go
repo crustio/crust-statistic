@@ -21,6 +21,7 @@ type ChainConfig struct {
 	Size            int
 	Confirm         int
 	UseMarketUpdate bool
+	UpdateSize      uint64
 }
 
 type MetricConfig struct {
@@ -69,7 +70,11 @@ func loadConfig(filePath string, config *Config) error {
 		log.Error("load section error", "section", "chain", "error", err)
 	}
 	if chain.Size == 0 {
-		chain.Size = 20
+		chain.Size = 500000
+	}
+
+	if chain.UpdateSize == 0 {
+		chain.UpdateSize = 100
 	}
 	db := DbConfig{}
 	cfg.Section("db").MapTo(&db)

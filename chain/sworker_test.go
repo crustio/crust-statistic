@@ -35,7 +35,10 @@ func getConfig() config.DbConfig {
 func TestSworkKey(t *testing.T) {
 	stop := make(chan int)
 	conn := NewConnection(TestUrl, log.Root(), stop)
-	conn.Connect()
+	err := conn.Connect()
+	if err != nil {
+		panic(err)
+	}
 	api := conn.api
 	ab := types.MustHexDecodeString(anchor)
 	anchorByte, _ := types.EncodeToBytes(ab)
@@ -56,7 +59,7 @@ func TestSworkKey(t *testing.T) {
 		panic(err)
 	}
 	fmt.Printf("%v", val)
-	assert.Equal(t, val.Slot, 4888800)
+	assert.Equal(t, val.Slot, uint64(4888800))
 }
 
 func TestGroups(t *testing.T) {
