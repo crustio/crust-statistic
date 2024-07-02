@@ -247,7 +247,12 @@ func (s *segFetcher) processEvents(fm *fileMeta) error {
 		cids := make([]string, 0, len(evts.Market_FileSuccess))
 		for _, evt := range evts.Market_FileSuccess {
 			s.log.Debug("get file success event", "cid", string(evt.Cid))
-			cids = append(cids, string(evt.Cid))
+			if len(string(evt.Cid)) <= 64 {
+				cids = append(cids, string(evt.Cid))
+			} else {
+				s.log.Error("get error event", "cid", string(evt.Cid), "block", fm.blockNumber)
+			}
+
 		}
 		fm.cids = cids
 	}
