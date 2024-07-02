@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/ChainSafe/log15"
 	"github.com/crustio/go-substrate-rpc-client/v4/types"
+	"statistic/config"
 	"statistic/db"
 	"sync"
 	"time"
@@ -14,7 +15,6 @@ const FileV2Prefix = "0x5ebf094108ead4fefa73f7a3b13cb4a76ed21091d079415ef4a35264
 const RetryCnt = 5
 
 type fetcher struct {
-	conn       *connection
 	initBlock  uint64
 	startBlock uint64
 	log        log15.Logger
@@ -23,26 +23,26 @@ type fetcher struct {
 	segfs      []*segFetcher
 }
 
-func NewFetcher(connection *connection, size uint64, initBlock uint64, startBlock uint64, logger log15.Logger, stop <-chan int, updateSize uint64) *fetcher {
-	hash := fetchInit(connection, initBlock)
+func NewFetcher(connections [3]*connection, cfg config.ChainConfig, startBlock uint64, logger log15.Logger, stop <-chan int) *fetcher {
+	initBlock := cfg.StartBlock
+	hash := fetchInit(connections[0], cfg.StartBlock)
 	segfs := make([]*segFetcher, 0, 100)
-	start := uint64(0)
-	end := start + size - 1
+	start := cfg.ZeroNumber
+	end := start + cfg.Size - 1
 	if end > initBlock {
 		end = initBlock
 	}
 	for end < initBlock {
-		segfs = append(segfs, newSegFetcher(connection, start, end, logger, hash, stop, updateSize))
+		segfs = append(segfs, newSegFetcher(connections, start, end, logger, hash, stop, cfg.UpdateSize))
 		start = end + 1
-		end = start + size - 1
+		end = start + cfg.Size - 1
 	}
 	if end > initBlock {
 		end = initBlock + 1
 	}
-	segfs = append(segfs, newSegFetcher(connection, start, end, logger, hash, stop, updateSize))
+	segfs = append(segfs, newSegFetcher(connections, start, end, logger, hash, stop, cfg.UpdateSize))
 
 	return &fetcher{
-		connection,
 		initBlock,
 		startBlock,
 		logger,
@@ -88,7 +88,7 @@ func (f *fetcher) getCompleteCh() chan int {
 }
 
 type segFetcher struct {
-	conn       *connection
+	conn       [3]*connection
 	index      uint64
 	end        uint64
 	log        log15.Logger
@@ -106,7 +106,7 @@ type fileMeta struct {
 	cids        []string
 }
 
-func newSegFetcher(connection *connection, index uint64, end uint64, logger log15.Logger, hash *types.Hash, stop <-chan int, updateSize uint64) *segFetcher {
+func newSegFetcher(connection [3]*connection, index uint64, end uint64, logger log15.Logger, hash *types.Hash, stop <-chan int, updateSize uint64) *segFetcher {
 	val, err := db.GetOrInit(index, end)
 	if err != nil {
 		panic(err)
@@ -133,7 +133,7 @@ func (s *segFetcher) start(wg *sync.WaitGroup) {
 		return
 	}
 	go func() {
-		err := s.fetchHash()
+		err := s.fetchHash(s.conn[0])
 		if err != nil {
 			s.log.Error("Fetch hash failed", "err", err)
 		}
@@ -141,7 +141,7 @@ func (s *segFetcher) start(wg *sync.WaitGroup) {
 	}()
 
 	go func() {
-		err := s.fetchFileMeta()
+		err := s.fetchFileMeta(s.conn[1])
 		if err != nil {
 			s.log.Error("Fetch event failed", "err", err)
 		}
@@ -149,7 +149,7 @@ func (s *segFetcher) start(wg *sync.WaitGroup) {
 	}()
 
 	go func() {
-		err := s.saveFiles()
+		err := s.saveFiles(s.conn[2])
 		if err != nil {
 			s.log.Error("Fetch files failed", "err", err)
 		}
@@ -157,16 +157,16 @@ func (s *segFetcher) start(wg *sync.WaitGroup) {
 	}()
 }
 
-func (s *segFetcher) fetchHash() error {
+func (s *segFetcher) fetchHash(conn *connection) error {
 	indexNumber := s.index
 	for {
-		h, err := s.conn.api.RPC.Chain.GetBlockHash(indexNumber)
+		h, err := conn.api.RPC.Chain.GetBlockHash(indexNumber)
 		if err != nil {
 			s.log.Error("failed to get init block hash", "err", err)
 			time.Sleep(time.Second)
 			continue
 		}
-		meta, err := s.conn.api.RPC.State.GetMetadata(h)
+		meta, err := conn.api.RPC.State.GetMetadata(h)
 		if err != nil {
 			s.log.Error("failed to get init meta", "err", err)
 			time.Sleep(time.Second)
@@ -184,7 +184,7 @@ Main:
 		default:
 			// Get hash for index block, sleep and retry if not ready
 			//now := time.Now().UnixMilli()
-			hash, err := s.conn.api.RPC.Chain.GetBlockHash(indexNumber)
+			hash, err := conn.api.RPC.Chain.GetBlockHash(indexNumber)
 			//after := time.Now().UnixMilli()
 			//f.log.Info("hash", "escape", after-now)
 			if err != nil {
@@ -192,6 +192,7 @@ Main:
 				time.Sleep(BlockRetryInterval)
 				continue
 			}
+			s.log.Info("get block hash", "number", indexNumber)
 			fm := &fileMeta{
 				blockNumber: indexNumber,
 				hash:        hash,
@@ -206,7 +207,7 @@ Main:
 	return nil
 }
 
-func (s *segFetcher) fetchFileMeta() error {
+func (s *segFetcher) fetchFileMeta(conn *connection) error {
 main:
 	for {
 		select {
@@ -216,8 +217,8 @@ main:
 			// Get hash for index block, sleep and retry if not ready
 			if ok {
 				for {
-					s.log.Debug("process block", "number", fm.blockNumber)
-					err := s.processEvents(fm)
+					s.log.Info("process block", "number", fm.blockNumber)
+					err := s.processEvents(fm, conn)
 					if err != nil {
 						s.log.Error("Failed to process events in block", "number", fm.blockNumber, "err", err)
 						continue
@@ -235,9 +236,9 @@ main:
 	return nil
 }
 
-func (s *segFetcher) processEvents(fm *fileMeta) error {
+func (s *segFetcher) processEvents(fm *fileMeta, conn *connection) error {
 	//now := time.Now().UnixMilli()
-	evts, err := s.conn.GetEvents(s.meta, &fm.hash)
+	evts, err := conn.GetEvents(s.meta, &fm.hash)
 	//after := time.Now().UnixMilli()
 	//f.log.Info("event", "escape", after-now)
 	if err != nil {
@@ -259,7 +260,7 @@ func (s *segFetcher) processEvents(fm *fileMeta) error {
 	s.fmCh <- fm
 	if len(evts.System_CodeUpdated) > 0 {
 		s.log.Trace("Received CodeUpdated event")
-		meta, err := s.conn.api.RPC.State.GetMetadata(fm.hash)
+		meta, err := conn.api.RPC.State.GetMetadata(fm.hash)
 		if err != nil {
 			s.log.Error("Unable to update Metadata", "err", err)
 		}
@@ -270,7 +271,7 @@ func (s *segFetcher) processEvents(fm *fileMeta) error {
 	return nil
 }
 
-func (s *segFetcher) saveFiles() error {
+func (s *segFetcher) saveFiles(conn *connection) error {
 	nextUpdate := uint64(0)
 main:
 	for {
@@ -280,7 +281,7 @@ main:
 		case fm, ok := <-s.fmCh:
 			// Get hash for index block, sleep and retry if not ready
 			if ok {
-				s.saveKeys(fm)
+				s.saveKeys(fm, conn)
 				if fm.blockNumber >= nextUpdate || fm.blockNumber == s.end {
 					db.UpdateIndexKey(fm.blockNumber, s.end)
 					nextUpdate = fm.blockNumber + s.updateSize
@@ -293,12 +294,12 @@ main:
 	return nil
 }
 
-func (s *segFetcher) saveKeys(fm *fileMeta) {
+func (s *segFetcher) saveKeys(fm *fileMeta, conn *connection) {
 	if len(fm.cids) == 0 {
 		return
 	}
 	for {
-		files, err := s.conn.GetFilesInfoV2ListWithCids(fm.cids, s.initHash)
+		files, err := conn.GetFilesInfoV2ListWithCids(fm.cids, s.initHash)
 		if err != nil {
 			s.log.Error("segFetcher get file error", "number", fm.blockNumber, "err", err)
 			time.Sleep(5 * time.Second)

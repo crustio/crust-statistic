@@ -9,7 +9,7 @@ import (
 var DefaultConn *connection
 
 type Chain struct {
-	startBlock   int
+	startBlock   uint64
 	processBlock int
 	startKey     string
 	conn         *connection // THe chains connection
@@ -23,30 +23,34 @@ func NewChain(cfg config.ChainConfig, logger log15.Logger) (*Chain, error) {
 
 	stop := make(chan int)
 	// Setup connection
-	conn := NewConnection(cfg.Url, logger, stop)
-	err := conn.Connect()
-	if err != nil {
-		return nil, err
+	conns := [3]*connection{}
+	for i := 0; i < 3; i++ {
+		conn := NewConnection(cfg.Url, logger, stop)
+		err := conn.Connect()
+		if err != nil {
+			return nil, err
+		}
+		conns[i] = conn
 	}
-	setDefaultConn(conn)
+
+	setDefaultConn(conns[0])
 	initBlock := uint64(cfg.StartBlock)
 	startBlock, err := db.GetBlockNumber()
 
 	if err != nil {
 		return nil, err
 	}
-
 	// Setup fetcher & listener
-	f := NewFetcher(conn, uint64(cfg.Size), initBlock, startBlock, logger, stop, cfg.UpdateSize)
+	f := NewFetcher(conns, cfg, startBlock, logger, stop)
 
 	if startBlock == 0 {
 		startBlock = initBlock + 1
 	}
-	l := NewListener(conn, startBlock, uint64(cfg.Confirm), logger, stop, f.getCompleteCh(), cfg.UseMarketUpdate)
+	l := NewListener(conns[0], startBlock, uint64(cfg.Confirm), logger, stop, f.getCompleteCh(), cfg.UseMarketUpdate)
 
 	return &Chain{
 		startBlock: cfg.StartBlock,
-		conn:       conn,
+		conn:       conns[0],
 		stop:       stop,
 		logger:     logger,
 		fetcher:    f,

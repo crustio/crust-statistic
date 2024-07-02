@@ -17,11 +17,12 @@ type Config struct {
 
 type ChainConfig struct {
 	Url             string
-	StartBlock      int
-	Size            int
+	StartBlock      uint64
+	Size            uint64
 	Confirm         int
 	UseMarketUpdate bool
 	UpdateSize      uint64
+	ZeroNumber      uint64
 }
 
 type MetricConfig struct {

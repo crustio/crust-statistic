@@ -51,21 +51,21 @@ func TestQueryKey(t *testing.T) {
 	if err != nil {
 		t.Fatal("get meta error")
 	}
-	hex := "0x516d52616d4d624d6143383734386b656946624c69445a644d4c7455363836375434413437444335346f79796934"
+	hex := "0x516d584734583277446e31533751585a7a7a435742634b706d643177567a4641737854464863774e3563764a6641"
 
 	key, err := generateFileKey(meta, types.MustHexDecodeString(hex))
 	println(key)
-	hash, err := api.RPC.Chain.GetBlockHash(1000000)
+	hash, err := api.RPC.Chain.GetBlockHash(15428993)
 	println(types.HexEncodeToString(hash[:]))
-	//strs, err := api.RPC.State.GetKeysPaged(PREFIX, 2, key, &hash)
-	//if err != nil {
-	//	println(err.Error())
-	//}
-	//if len(strs) > 0 {
-	//	for _, str := range strs {
-	//		println(str)
-	//	}
-	//}
+	strs, err := api.RPC.State.GetKeysPaged(PREFIX, 2, key, &hash)
+	if err != nil {
+		println(err.Error())
+	}
+	if len(strs) > 0 {
+		for _, str := range strs {
+			println(str)
+		}
+	}
 	data, err := api.RPC.State.GetStorageRaw(types.MustHexDecodeString(key), hash)
 	println(string(*data))
 }
