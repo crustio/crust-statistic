@@ -61,6 +61,7 @@ func (f *fetcher) start() {
 	wg.Add(len(f.segfs))
 	for _, segf := range f.segfs {
 		go segf.start(&wg)
+		time.Sleep(time.Second)
 	}
 	wg.Wait()
 	f.complete()
@@ -192,7 +193,7 @@ Main:
 				time.Sleep(BlockRetryInterval)
 				continue
 			}
-			s.log.Info("get block hash", "number", indexNumber)
+			s.log.Debug("get block hash", "number", indexNumber)
 			fm := &fileMeta{
 				blockNumber: indexNumber,
 				hash:        hash,
@@ -217,7 +218,7 @@ main:
 			// Get hash for index block, sleep and retry if not ready
 			if ok {
 				for {
-					s.log.Info("process block", "number", fm.blockNumber)
+					s.log.Debug("process block", "number", fm.blockNumber)
 					err := s.processEvents(fm, conn)
 					if err != nil {
 						s.log.Error("Failed to process events in block", "number", fm.blockNumber, "err", err)
