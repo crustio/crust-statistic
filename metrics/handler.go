@@ -96,8 +96,9 @@ func handlerReplicaCntBySize() {
 	for _, c := range avgReplicasBySize {
 		avg, err := db.AvgReplicasBySize(uint64(c.low), uint64(c.high))
 		if err != nil {
-			log.Error("get avg replicas by size error", "err", err)
-			return
+			log.Error("get avg replicas by size error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("avg replicas by size", "label", c.name, "value", avg)
 		c.value = avg
@@ -122,8 +123,9 @@ func handlerReplicaCntByCreateTime() {
 		high := now - uint64(c.low)
 		avg, err := db.AvgReplicasByCreateTime(low, high)
 		if err != nil {
-			log.Error("get avg replicas by create time error", "err", err)
-			return
+			log.Error("get avg replicas by create time error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("avg replicas by create time", "label", c.name, "value", avg)
 		c.value = avg
@@ -139,8 +141,9 @@ func handlerFileCntByReplicas() {
 	for _, c := range fileCntByReplicaSize {
 		cnt, err := db.FileCntByReplicaSize(uint64(c.low), uint64(c.high))
 		if err != nil {
-			log.Error("get file count by replicas size error", "err", err)
-			return
+			log.Error("get file count by replicas size error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("file count by replica size", "label", c.name, "value", cnt)
 		c.value = float64(cnt)
@@ -176,8 +179,9 @@ func handlerFileCntBySize() {
 	for _, c := range fileCntBySize {
 		cnt, err := db.FileCntBySize(uint64(c.low), uint64(c.high))
 		if err != nil {
-			log.Error("get file count by size error", "err", err)
-			return
+			log.Error("get file count by size error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("file count by file size", "label", c.name, "value", cnt)
 		c.value = float64(cnt)
@@ -189,8 +193,9 @@ func handlerFileCntBySize() {
 	for _, c := range fileCntBySizeNoneRep {
 		cnt, err := db.FileCntBySizeWithNoneRep(uint64(c.low), uint64(c.high))
 		if err != nil {
-			log.Error("get file count by size with no-zero replicas error", "err", err)
-			return
+			log.Error("get file count by size with no-zero replicas error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("file count by file size with no-zero replicas", "label", c.name, "value", cnt)
 		c.value = float64(cnt)
@@ -215,8 +220,9 @@ func handlerFileCntByCreateTime() {
 		high := now - uint64(c.low)
 		cnt, err := db.FileCntByCreateTime(low, high)
 		if err != nil {
-			log.Error("get file count by create time error", "err", err)
-			return
+			log.Error("get file count by create time error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("file count by create time", "label", c.name, "value", cnt)
 		c.value = float64(cnt)
@@ -248,8 +254,9 @@ func handlerFileCntByExpireTime() {
 		}
 		cnt, err := db.FileCntByExpireTime(low, high)
 		if err != nil {
-			log.Error("get file count by expire time error", "err", err)
-			return
+			log.Error("get file count by expire time error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("file count by expire time", "label", c.name, "value", cnt)
 		c.value = float64(cnt)
@@ -317,8 +324,9 @@ func handlerSwokerByRatio() {
 	for _, c := range swokerRatio {
 		cnt, err := db.NodeCntByRatio(c.low, c.high)
 		if err != nil {
-			log.Error("get swoker count by ratio error", "err", err)
-			return
+			log.Error("get swoker count by ratio error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("sworker count by ratio", "label", c.name, "value", cnt)
 		c.value = float64(cnt)
@@ -361,8 +369,9 @@ func handlerGroupByMemberCnt() {
 	for _, c := range groupCntByMemberCnt {
 		cnt, err := db.GroupCntByAll(uint64(c.low), uint64(c.high))
 		if err != nil {
-			log.Error("get group cnt by member cnt error", "err", err)
-			return
+			log.Error("get group cnt by member cnt error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("group count by member cnt", "label", c.name, "value", cnt)
 		c.value = float64(cnt)
@@ -377,8 +386,9 @@ func handlerGroupByActiveCnt() {
 	for _, c := range groupCntByActiveCnt {
 		cnt, err := db.GroupCntByActive(uint64(c.low), uint64(c.high))
 		if err != nil {
-			log.Error("get group cnt by active member cnt error", "err", err)
-			return
+			log.Error("get group cnt by active member cnt error", "label", c.name, "err", err)
+			c.value = 0
+			continue
 		}
 		log.Debug("group count by active cnt", "label", c.name, "value", cnt)
 		c.value = float64(cnt)
