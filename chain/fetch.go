@@ -218,7 +218,7 @@ main:
 			// Get hash for index block, sleep and retry if not ready
 			if ok {
 				for {
-					s.log.Debug("process block", "number", fm.blockNumber)
+					s.log.Info("process block", "number", fm.blockNumber)
 					err := s.processEvents(fm, conn)
 					if err != nil {
 						s.log.Error("Failed to process events in block", "number", fm.blockNumber, "err", err)
@@ -248,13 +248,12 @@ func (s *segFetcher) processEvents(fm *fileMeta, conn *connection) error {
 	if len(evts.Market_FileSuccess) > 0 {
 		cids := make([]string, 0, len(evts.Market_FileSuccess))
 		for _, evt := range evts.Market_FileSuccess {
-			s.log.Debug("get file success event", "cid", string(evt.Cid))
-			if len(string(evt.Cid)) <= 64 {
+			if len(string(evt.Cid)) >= 46 && len(string(evt.Cid)) <= 64 {
 				cids = append(cids, string(evt.Cid))
+				s.log.Info("get file success event", "cid", string(evt.Cid), "block", fm.blockNumber)
 			} else {
 				s.log.Error("get error event", "cid", string(evt.Cid), "block", fm.blockNumber)
 			}
-
 		}
 		fm.cids = cids
 	}
