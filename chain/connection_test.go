@@ -6,6 +6,13 @@ import (
 	"testing"
 )
 
+func getConnection() *connection {
+	stop := make(chan int)
+	conn := NewConnection(TestUrl, log.Root(), stop)
+	conn.Connect()
+	return conn
+}
+
 func TestQueryKeysFile(t *testing.T) {
 	stop := make(chan int)
 	conn := NewConnection(TestUrl, log.Root(), stop)

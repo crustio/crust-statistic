@@ -4,25 +4,34 @@ import (
 	log "github.com/ChainSafe/log15"
 	"math"
 	"statistic/chain"
+	"statistic/config"
 	"statistic/db"
 	"strconv"
 )
 
 type metricHandler func()
 
-const PB uint64 = 1 << 50
-
-const CommonInterval = 3600
-
-var sworkerActive = false
+const (
+	PB             = 1 << 50
+	TB             = 1 << 40
+	CommonInterval = 3600
+)
 
 var Handlers []struct {
 	interval int
 	handler  metricHandler
 }
-var slot uint64
+var (
+	sworkerActive = false
+	slot          uint64
+	isInit        = false
+	isRewardInit  = false
+	sworkerCnt    = 0
+)
 
-func initHandler(interval int) {
+func initHandler(config config.MetricConfig) {
+	interval := config.Interval
+	stakeInterval := config.StakeInterval
 	Handlers = []struct {
 		interval int
 		handler  metricHandler
@@ -32,11 +41,15 @@ func initHandler(interval int) {
 		{interval, handlerReplicaCntBySize},
 		{interval, handlerReplicaCntByCreateTime},
 		{interval, handlerFileCntByReplicas},
-		{interval / 6, HandlerSlotFileCnt},
+		{interval / 6, handlerSlotFileCnt},
 		{interval, handlerFileCntBySize},
 		{interval, handlerFileCntByCreateTime},
 		{interval, handlerFileCntByExpireTime},
 		{interval, handlerSwoker},
+		{stakeInterval, handlerStake},
+		{stakeInterval, handlerTopStake},
+		{stakeInterval, handlerStakeCount},
+		{stakeInterval, handlerRewards},
 	}
 }
 
@@ -154,8 +167,8 @@ func handlerFileCntByReplicas() {
 	log.Info("handlerFileCntByReplicas done")
 }
 
-//HandlerSlotFileCnt 新增文件数
-func HandlerSlotFileCnt() {
+//handlerSlotFileCnt 新增文件数
+func handlerSlotFileCnt() {
 	bn, err := db.GetBlockNumber()
 	if err != nil {
 		return
@@ -291,11 +304,16 @@ func handlerSwoker() {
 	err = chain.GetGroupInfo(chain.DefaultConn)
 	if err != nil {
 		log.Error("get group info error", "err", err)
+		sworkerActive = false
 		return
 	}
 	go handlerGroupCnt()
 	go handlerGroupByMemberCnt()
 	go handlerGroupByActiveCnt()
+	if sworkerCnt%6 == 0 {
+		go handlerValidators()
+	}
+	sworkerCnt++
 	sworkerActive = false
 }
 
@@ -424,4 +442,103 @@ func handlerSworkerVersion() {
 		chainMetric.sworkerByVersion.WithLabelValues(version).Set(float64(cnt))
 	}
 	log.Info("sworker version done")
+}
+
+func handlerStake() {
+	if !isInit {
+		stakes, err := chain.GetTotalStakes(chain.DefaultConn)
+		if err != nil {
+			log.Error("get total stakes error", "err", err)
+			return
+		}
+		for _, stake := range stakes {
+			chainMetric.totalStakes.WithLabelValues(strconv.Itoa(int(stake.Index))).Set(float64(stake.Value))
+		}
+		isInit = true
+	} else {
+		i, v, err := chain.GetStakeByIndex(chain.DefaultConn)
+		if err != nil {
+			log.Error("get stake by index error", "err", err)
+			return
+		}
+		chainMetric.totalStakes.WithLabelValues(strconv.Itoa(int(i))).Set(v)
+	}
+	log.Info("total stakes done")
+}
+
+func handlerTopStake() {
+	stakes, err := chain.GetTopStakeLimit(chain.DefaultConn)
+	if err != nil {
+		log.Error("get top stake limit error", "err", err)
+		return
+	}
+
+	for _, stake := range stakes {
+		chainMetric.topStakeLimit.WithLabelValues(stake.Acc).Set(stake.Value / float64(TB))
+	}
+	log.Info("top stake limit done")
+}
+
+func handlerValidators() {
+	validators, err := db.GetTopGroups()
+	if err != nil {
+		log.Error("get top groups error", "err", err)
+		return
+	}
+	for _, validator := range validators {
+		chainMetric.topValidatorFileSize.WithLabelValues(validator.GId).Set(float64(validator.FileSize) / float64(TB))
+		chainMetric.topValidatorSpower.WithLabelValues(validator.GId).Set(float64(validator.Spower) / float64(TB))
+		if validator.Free != 0 {
+			chainMetric.topValidatorRatio.WithLabelValues(validator.GId).Set(float64(validator.Spower) / float64(validator.Free))
+		}
+	}
+	log.Info("top validators done")
+}
+
+func handlerStakeCount() {
+
+	gCnt, err := chain.DefaultConn.GetKeysCnt("Staking", "Guarantors")
+	if err != nil {
+		log.Error("get Staking Guarantors Count error", "err", err)
+	} else {
+		chainMetric.guarantors.Set(float64(gCnt))
+	}
+
+	vCnt, err := chain.DefaultConn.GetKeysCnt("Staking", "Validators")
+	if err != nil {
+		log.Error("get Staking Validators Count error", "err", err)
+	} else {
+		chainMetric.validators.Set(float64(vCnt))
+	}
+	log.Info("validators count done")
+}
+
+func handlerRewards() {
+	if !isRewardInit {
+		values, err := chain.GetStakingPayout(chain.DefaultConn)
+		if err != nil {
+			log.Error("get staking payout error", "err", err)
+			return
+		}
+		payouts, err := chain.GetAuthoringPayout(chain.DefaultConn)
+		if err != nil {
+			log.Error("get author payout error", "err", err)
+			return
+		}
+		for _, value := range values {
+			if v, ok := payouts[value.Index]; ok {
+				value.Value += v
+			}
+			chainMetric.rewards.WithLabelValues(strconv.Itoa(int(value.Index))).Set(value.Value)
+		}
+		isRewardInit = true
+	} else {
+		i, v, err := chain.GetRewardByIndex(chain.DefaultConn)
+		if err != nil {
+			log.Error("get reward by index error", "err", err)
+			return
+		}
+		chainMetric.rewards.WithLabelValues(strconv.Itoa(int(i))).Set(v)
+	}
+	log.Info("era rewards done")
 }

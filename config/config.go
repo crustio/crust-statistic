@@ -26,13 +26,14 @@ type ChainConfig struct {
 }
 
 type MetricConfig struct {
-	GateWay      string
-	Port         int
-	Interval     int
-	PushInterval int
-	Env          string
-	Codes        []string
-	Versions     []string
+	GateWay       string
+	Port          int
+	Interval      int
+	PushInterval  int
+	StakeInterval int
+	Env           string
+	Codes         []string
+	Versions      []string
 }
 
 type DbConfig struct {
@@ -87,6 +88,9 @@ func loadConfig(filePath string, config *Config) error {
 	cfg.Section("metric").MapTo(&metric)
 	if err != nil {
 		log.Error("load section error", "section", "metric", "error", err)
+	}
+	if metric.StakeInterval == 0 {
+		metric.StakeInterval = 3600 * 6
 	}
 
 	config.Chain = chain

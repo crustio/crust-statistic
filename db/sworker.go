@@ -75,6 +75,9 @@ type SworkerGroup struct {
 	GId       string `gorm:"type:VARCHAR(64)"`
 	AllMember int    `gorm:"index:idx_all"`
 	Active    int    `gorm:"index:idx_active"`
+	Free      int64
+	FileSize  int64
+	Spower    int64
 }
 
 func SaveGroups(groups []*SworkerGroup) error {
@@ -167,5 +170,26 @@ func GetVersionCnt() ([]VersionCnt, error) {
 	var res []VersionCnt
 	err := MysqlDb.Raw("select pk.code,count(1) as cnt from work_report w left join pub_key pk on w.anchor = pk.anchor group by pk.code").
 		Scan(&res).Error
+	return res, err
+}
+
+type GroupInfo struct {
+	Active      int
+	SpowerSum   int64
+	FreeSum     int64
+	FileSizeSum int64
+}
+
+func GetGroupInfo(anchors []string) (GroupInfo, error) {
+	var gi []GroupInfo
+	err := MysqlDb.Raw("select count(1) as active,sum(spower) as spower_sum,sum(file_size) as file_size_sum,sum(free) as free_sum from work_report where anchor in ?",
+		anchors).Scan(&gi).Error
+	return gi[0], err
+}
+
+func GetTopGroups() ([]SworkerGroup, error) {
+	var res []SworkerGroup
+	err := MysqlDb.Table("sworker_group").Where("active > 0").
+		Order("spower desc").Limit(70).Find(&res).Error
 	return res, err
 }

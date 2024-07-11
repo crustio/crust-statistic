@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/crustio/go-substrate-rpc-client/v4/types"
+	"github.com/crustio/go-substrate-rpc-client/v4/xxhash"
 	"github.com/crustio/scale.go/utiles"
 	"github.com/decred/base58"
 	"golang.org/x/crypto/blake2b"
@@ -167,6 +168,20 @@ func parseAccountId(acc []byte) []byte {
 	return acc[32+16:]
 }
 
+func parseStakeAcc(acc []byte) []byte {
+	return acc[32+8:]
+}
+
+func parseIndex(key []byte) uint32 {
+	tmp := key[32+8 : 44]
+	var res uint32
+	err := types.DecodeFromBytes(tmp, &res)
+	if err != nil {
+		return 0
+	}
+	return res
+}
+
 func generateFileKey(meta *types.Metadata, cid []byte) (string, error) {
 	bytes, _ := types.EncodeToBytes(cid)
 	storageKey, err := types.CreateStorageKey(meta, "Market", "FilesV2", bytes)
@@ -179,4 +194,9 @@ func generateFileKey(meta *types.Metadata, cid []byte) (string, error) {
 func getCidStorageKey(meta *types.Metadata, cid string) (types.StorageKey, error) {
 	bytes, _ := types.EncodeToBytes([]byte(cid))
 	return types.CreateStorageKey(meta, "Market", "FilesV2", bytes)
+}
+
+func getPrefix(prefix, method string) string {
+	bs := append(xxhash.New128([]byte(prefix)).Sum(nil), xxhash.New128([]byte(method)).Sum(nil)...)
+	return types.HexEncodeToString(bs)
 }

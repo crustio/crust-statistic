@@ -46,6 +46,22 @@ func TestDecodeUpdateReplicas(t *testing.T) {
 	assert.Equal(t, string(val.Files[0].Cid), "abc")
 }
 
+func TestParserIndex(t *testing.T) {
+	key := "0x5f3e4907f716ac89b6347d15ececedcad9489331c06779251388c89753b39481ffe73d330fdafbc22d110000"
+	value := parseIndex(types.MustHexDecodeString(key))
+	assert.Equal(t, uint32(4397), value)
+}
+
+func TestPrefix(t *testing.T) {
+	conn := getConnection()
+	_, ab, _ := SS58Decode(AccountId)
+	key, _ := conn.generateKey("Staking", "StakeLimit", ab)
+	hexKey := types.HexEncodeToString(key)
+	prefix := getPrefix("Staking", "StakeLimit")
+	println(prefix)
+	assert.Equal(t, hexKey[:66], prefix)
+}
+
 func Example_DecodeReportWork() {
 
 	api, _ := gsrpc.NewSubstrateAPI(TestUrl)

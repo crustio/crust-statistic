@@ -18,6 +18,7 @@ const TEST = "TEST"
 type ChainMetrics struct {
 	fileMetrics
 	sworkerMetrics
+	stakeMetrics
 	startCh   <-chan int
 	stop      chan int
 	config    config.MetricConfig
@@ -32,6 +33,7 @@ func NewChainMetrics(config *config.Config, startCh <-chan int) *ChainMetrics {
 	chainMetric = &ChainMetrics{
 		fileMetrics:    NewFileMetrics(config.Metric),
 		sworkerMetrics: NewSworkerMetrics(config.Metric),
+		stakeMetrics:   NewStakeMetrics(config.Metric),
 		startCh:        startCh,
 		stop:           make(chan int),
 		config:         config.Metric,
@@ -48,6 +50,7 @@ func (c *ChainMetrics) registerMetric() {
 	register := prometheus.NewRegistry()
 	register.MustRegister(c.getFileCollector()...)
 	register.MustRegister(c.getSworkerCollector()...)
+	register.MustRegister(c.getStakeCollector()...)
 	pusher.Gatherer(register)
 	c.pusher = pusher
 	c.scheduler.Every(c.config.PushInterval).Seconds().Do(func() {
@@ -61,11 +64,12 @@ func (c *ChainMetrics) registerMetric() {
 	})
 	prometheus.MustRegister(c.getFileCollector()...)
 	prometheus.MustRegister(c.getSworkerCollector()...)
+	prometheus.MustRegister(c.getStakeCollector()...)
 }
 
 func registerSecheduler(cfg config.MetricConfig) *gocron.Scheduler {
 	s := gocron.NewScheduler(time.UTC)
-	initHandler(cfg.Interval)
+	initHandler(cfg)
 	for _, handler := range Handlers {
 		s.Every(handler.interval).Seconds().Do(handler.handler)
 	}

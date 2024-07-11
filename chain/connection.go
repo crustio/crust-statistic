@@ -165,6 +165,9 @@ func (c *connection) queryFileStorages(query []types.StorageKey, hash *types.Has
 	res := make([]*StorageFile, 0, len(query))
 	for _, set := range resp {
 		for _, change := range set.Changes {
+			if len(change.StorageData) == 0 {
+				continue
+			}
 			hexKey := types.HexEncodeToString(change.StorageKey)
 			cid := keys[hexKey]
 			m := scale.ScaleDecoder{}
@@ -194,6 +197,10 @@ func (c *connection) GetStorageRaw(key string, blockHash *types.Hash) (*types.St
 	return c.api.RPC.State.GetStorageRaw(types.MustHexDecodeString(key), *blockHash)
 }
 
+func (c *connection) GetStorageRawLatest(key types.StorageKey) (*types.StorageDataRaw, error) {
+	return c.api.RPC.State.GetStorageRawLatest(key)
+}
+
 func (c *connection) GetBlock(hash *types.Hash) (*types.SignedBlock, error) {
 	return c.api.RPC.Chain.GetBlock(*hash)
 }
@@ -220,4 +227,34 @@ func (c *connection) generateKey(prefix, method string, args ...[]byte) (types.S
 
 func (c *connection) generateFileStorageKey(cid string) (types.StorageKey, error) {
 	return getCidStorageKey(&c.meta, cid)
+}
+
+func (c *connection) GetKeysCnt(prefix, method string) (int, error) {
+	prefixKeys := getPrefix(prefix, method)
+	startKey := prefixKeys
+	hash, err := c.api.RPC.Chain.GetBlockHashLatest()
+	if err != nil {
+		return 0, err
+	}
+	cnt := 0
+	for {
+		keys, err := c.api.RPC.State.GetKeysPaged(prefixKeys, 1000, startKey, &hash)
+		if err != nil {
+			return 0, err
+		}
+		if len(keys) == 0 {
+			break
+		}
+		// remove the startIndexKey
+		if startKey == keys[0] {
+			if len(keys) == 1 {
+				break
+			} else {
+				keys = keys[1:]
+			}
+		}
+		cnt += len(keys)
+		startKey = keys[len(keys)-1]
+	}
+	return cnt, nil
 }

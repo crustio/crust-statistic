@@ -83,7 +83,7 @@ func saveGroups(groups []*group, data map[string]string) error {
 	dbg := make([]*db.SworkerGroup, 0, len(groups))
 	var err error
 	for _, group := range groups {
-		var active int64 = 0
+		var active db.GroupInfo
 		if len(group.Members) > 0 {
 			anchors := make([]string, 0, len(group.Members))
 			for _, member := range group.Members {
@@ -92,13 +92,13 @@ func saveGroups(groups []*group, data map[string]string) error {
 				}
 			}
 			if len(anchors) > 0 {
-				active, err = db.MemberCnt(anchors)
+				active, err = db.GetGroupInfo(anchors)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		dbg = append(dbg, group.ToDto(int(active)))
+		dbg = append(dbg, group.ToDto(active))
 	}
 	return db.SaveGroups(dbg)
 }
@@ -134,7 +134,7 @@ func GetAllSworkReports(conn *connection) (int, int, error) {
 		return 0, 0, err
 	}
 	lastSlot := uint64(head.Number) / SlotSize * SlotSize
-	activeSlot := lastSlot - 5*SlotSize
+	activeSlot := lastSlot - 6*SlotSize
 	allCount := 0
 	activeCount := 0
 	for {

@@ -3,6 +3,7 @@ package chain
 import (
 	"github.com/crustio/go-substrate-rpc-client/v4/types"
 	"math"
+	"math/big"
 	"statistic/db"
 )
 
@@ -195,12 +196,22 @@ type identity struct {
 	Group              types.OptionBytes32
 }
 
-func (w *group) ToDto(active int) *db.SworkerGroup {
+func (w *group) ToDto(active db.GroupInfo) *db.SworkerGroup {
 	return &db.SworkerGroup{
 		GId:       w.GId,
 		AllMember: len(w.Members),
-		Active:    active,
+		Active:    active.Active,
+		Free:      active.FreeSum,
+		Spower:    active.SpowerSum,
+		FileSize:  active.FileSizeSum,
 	}
+}
+
+func getInt64(val *big.Int) int64 {
+	if val == nil {
+		return 0
+	}
+	return val.Int64()
 }
 
 type pubInfo struct {
@@ -218,4 +229,14 @@ func (p *pubInfo) ToDto() *db.PubKey {
 		Code:   types.HexEncodeToString(p.Code),
 		Anchor: anchor,
 	}
+}
+
+type Stake struct {
+	Index uint32
+	Value float64
+}
+
+type StakeLimit struct {
+	Acc   string
+	Value float64
 }

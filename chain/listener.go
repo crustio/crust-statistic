@@ -240,14 +240,20 @@ func (l *listener) updateFiles(ops map[string]int, hash *types.Hash, number uint
 		//println(cid)
 		switch t {
 		case New:
-			file := cidMap[cid]
-			err = saveNewFile(file.File, file.Cid, number)
+			file, ok := cidMap[cid]
+			if ok {
+				err = saveNewFile(file.File, file.Cid, number)
+			}
 		case Update:
-			file := cidMap[cid]
-			err = updateFile(file.File, file.Cid)
+			file, ok := cidMap[cid]
+			if ok {
+				err = updateFile(file.File, file.Cid)
+			}
 		case UpdateRep:
-			file := cidMap[cid]
-			err = updateReplicas(file.File, file.Cid)
+			file, ok := cidMap[cid]
+			if ok {
+				err = updateReplicas(file.File, file.Cid)
+			}
 		case Delete:
 			err = deleteByCid(cid)
 		}
