@@ -180,7 +180,7 @@ func handlerSlotFileCnt() {
 	if err != nil {
 		return
 	}
-	label := strconv.Itoa(int(slot))
+	label := strconv.Itoa(int(slot - chain.SlotSize))
 	log.Debug("file count by replica size", "label", label, "value", cnt)
 	chainMetric.fileCntBySlot.WithLabelValues(label).Set(float64(cnt))
 	slot += chain.SlotSize
