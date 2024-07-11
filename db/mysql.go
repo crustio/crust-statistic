@@ -62,6 +62,7 @@ func Migrator() error {
 		&WorkReport{},
 		&SworkerGroup{},
 		&PubKey{},
+		&FileOrder{},
 	); err != nil {
 		return err
 	}

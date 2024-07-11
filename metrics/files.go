@@ -19,6 +19,7 @@ type fileMetrics struct {
 	fileCntBySizeWithNoneRep *prometheus.GaugeVec
 	fileCntByCreateTime      *prometheus.GaugeVec
 	fileCntByExpireTime      *prometheus.GaugeVec
+	fileOrdersBySlot         *prometheus.GaugeVec
 }
 
 func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
@@ -29,7 +30,7 @@ func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
 	return fileMetrics{
 		filesCnt: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: prefix + "FilesCnt",
-			Help: "Number of file",
+			Help: "Number of files",
 		}),
 		avgReplicas: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: prefix + "AvgReplicas",
@@ -52,7 +53,7 @@ func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
 		filesCntByReplicas: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FilesCntByReplicas",
-				Help: "Number of file by replica size",
+				Help: "Number of files by replica size",
 			},
 			[]string{"replicas"},
 		),
@@ -70,37 +71,44 @@ func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
 		fileCntBySlot: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntBySlot",
-				Help: "Number of file by slot",
+				Help: "Number of new files  by slot",
 			},
 			[]string{"slot"},
 		),
 		fileCntBySize: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntBySize",
-				Help: "Number of file by size",
+				Help: "Number of files by size",
 			},
 			[]string{"size"},
 		),
 		fileCntBySizeWithNoneRep: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntBySizeWithNoneRep",
-				Help: "Number of file by size with non-zero replicas",
+				Help: "Number of files by size with non-zero replicas",
 			},
 			[]string{"size"},
 		),
 		fileCntByCreateTime: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntByCreateTime",
-				Help: "Number of file by create time",
+				Help: "Number of files by create time",
 			},
 			[]string{"create"},
 		),
 		fileCntByExpireTime: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "FileCntByExpireTime",
-				Help: "Number of file by expire time",
+				Help: "Number of files by expire time",
 			},
 			[]string{"expire"},
+		),
+		fileOrdersBySlot: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: prefix + "FileOrdersBySlot",
+				Help: "Number of file orders  by slot",
+			},
+			[]string{"slot"},
 		),
 	}
 }
@@ -119,5 +127,6 @@ func (f *fileMetrics) getFileCollector() []prometheus.Collector {
 		f.fileCntBySizeWithNoneRep,
 		f.fileCntByCreateTime,
 		f.fileCntByExpireTime,
+		f.fileOrdersBySlot,
 	}
 }

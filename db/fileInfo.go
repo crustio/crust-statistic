@@ -254,3 +254,22 @@ func FileCntByExpireTime(low uint64, high uint64) (int64, error) {
 		Where("expired_at <= ?", high).Count(&count).Error
 	return count, err
 }
+
+type FileOrder struct {
+	ID          int    `gorm:"primarykey"`
+	Cid         string `gorm:"type:VARCHAR(64)"`
+	BlockNumber uint64 `gorm:"index:idx_block_number"`
+}
+
+func SaveFileOrders(orders []FileOrder) error {
+	return MysqlDb.CreateInBatches(orders, 100).Error
+}
+
+func FileOrdersBySlot(slot uint64) (int64, error) {
+	var count int64
+	preSlot := slot - 600
+	err := MysqlDb.Table("file_order").
+		Where("block_number >= ?", preSlot).
+		Where("block_number < ?", slot).Count(&count).Error
+	return count, err
+}

@@ -176,15 +176,22 @@ func handlerSlotFileCnt() {
 	if bn < slot {
 		return
 	}
+	label := strconv.Itoa(int(slot - chain.SlotSize))
 	cnt, err := db.FileCntBySlot(slot)
 	if err != nil {
+		log.Error("get file count by slot error", "label", label, "err", err)
 		return
 	}
-	label := strconv.Itoa(int(slot - chain.SlotSize))
-	log.Debug("file count by replica size", "label", label, "value", cnt)
 	chainMetric.fileCntBySlot.WithLabelValues(label).Set(float64(cnt))
+	orders, err := db.FileOrdersBySlot(slot)
+	if err != nil {
+		log.Error("get file orders by slot error", "label", label, "err", err)
+		return
+	}
+	chainMetric.fileOrdersBySlot.WithLabelValues(label).Set(float64(orders))
+
 	slot += chain.SlotSize
-	log.Info("HandlerSlotFileCnt done")
+	log.Info("Handler Slot Files done")
 }
 
 //按文件大小统计文件个数

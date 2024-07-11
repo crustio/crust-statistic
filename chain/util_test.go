@@ -54,6 +54,11 @@ func TestParserIndex(t *testing.T) {
 
 func TestPrefix(t *testing.T) {
 	conn := getConnection()
+	head, _ := conn.api.RPC.Chain.GetHeaderLatest()
+	println(head.Number)
+	f, _ := conn.api.RPC.Chain.GetFinalizedHead()
+	head, _ = conn.api.RPC.Chain.GetHeader(f)
+	println(head.Number)
 	_, ab, _ := SS58Decode(AccountId)
 	key, _ := conn.generateKey("Staking", "StakeLimit", ab)
 	hexKey := types.HexEncodeToString(key)

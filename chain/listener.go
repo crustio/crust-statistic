@@ -138,6 +138,7 @@ func (l *listener) processEvents(hash *types.Hash, number uint64) error {
 // handleEvents calls the associated handler for all registered event types
 func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) error {
 	result := make(map[string]int)
+	fileOrders := make([]db.FileOrder, 0, 10)
 	var err error
 
 	for _, evt := range evts.Market_RenewFileSuccess {
@@ -182,6 +183,10 @@ func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) e
 
 	for _, evt := range evts.Market_FileSuccess {
 		result[string(evt.Cid)] = New
+		fileOrders = append(fileOrders, db.FileOrder{
+			Cid:         string(evt.Cid),
+			BlockNumber: number,
+		})
 	}
 
 	for _, evt := range evts.Market_IllegalFileClosed {
@@ -191,7 +196,6 @@ func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) e
 	for _, evt := range evts.Market_FileClosed {
 		result[string(evt.Cid)] = Delete
 	}
-
 	//update files with Cids
 	if len(result) > 0 {
 		err = l.updateFiles(result, hash, number)
@@ -199,6 +203,8 @@ func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) e
 			return err
 		}
 	}
+
+	db.SaveFileOrders(fileOrders)
 
 	if len(evts.System_CodeUpdated) > 0 {
 		l.log.Trace("Received CodeUpdated event")
