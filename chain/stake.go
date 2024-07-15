@@ -19,7 +19,7 @@ func GetTotalStakes(conn *connection) ([]Stake, error) {
 }
 
 func GetStakeByIndex(conn *connection) (uint32, float64, error) {
-	index, err := getCurrentIndex(conn)
+	index, err := GetCurrentIndex(conn)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -41,7 +41,7 @@ func GetStakeByIndex(conn *connection) (uint32, float64, error) {
 }
 
 func GetRewardByIndex(conn *connection) (uint32, float64, error) {
-	index, err := getCurrentIndex(conn)
+	index, err := GetCurrentIndex(conn)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -78,7 +78,7 @@ func decodeCru(bs []byte) (float64, error) {
 	return float64(val.Int64()) / float64(1e12), nil
 }
 
-func getCurrentIndex(conn *connection) (uint32, error) {
+func GetCurrentIndex(conn *connection) (uint32, error) {
 	key, err := conn.generateKey("Staking", "CurrentEra")
 	if err != nil {
 		return 0, err

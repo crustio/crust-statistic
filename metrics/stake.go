@@ -12,8 +12,8 @@ type stakeMetrics struct {
 	topValidatorSpower   *prometheus.GaugeVec
 	topValidatorFileSize *prometheus.GaugeVec
 	topValidatorRatio    *prometheus.GaugeVec
-	guarantors           prometheus.Gauge
-	validators           prometheus.Gauge
+	guarantors           *prometheus.GaugeVec
+	validators           *prometheus.GaugeVec
 	rewards              *prometheus.GaugeVec
 }
 
@@ -35,7 +35,7 @@ func NewStakeMetrics(cfg config.MetricConfig) stakeMetrics {
 				Name: prefix + "TopStakeLimit",
 				Help: "Top10 Stake Limit",
 			},
-			[]string{"account"},
+			[]string{"eraIndex", "account"},
 		),
 		topValidatorSpower: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -58,14 +58,20 @@ func NewStakeMetrics(cfg config.MetricConfig) stakeMetrics {
 			},
 			[]string{"account"},
 		),
-		guarantors: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: prefix + "StakeGuarantorCnt",
-			Help: "Number of guarantors",
-		}),
-		validators: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: prefix + "StakeValidatorCnt",
-			Help: "Number of validators",
-		}),
+		guarantors: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: prefix + "StakeGuarantorCnt",
+				Help: "Number of guarantors",
+			},
+			[]string{"eraIndex"},
+		),
+		validators: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: prefix + "StakeValidatorCnt",
+				Help: "Number of validators",
+			},
+			[]string{"eraIndex"},
+		),
 		rewards: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "StakeRewards",

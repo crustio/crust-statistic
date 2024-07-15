@@ -68,7 +68,7 @@ func getSlot(i uint64) uint64 {
 	return i / chain.SlotSize * chain.SlotSize
 }
 
-//全网平均副本数
+// 全网平均副本数
 func handlerAverageRepilicas() {
 	avg, err := db.AvgReplicas()
 	if err != nil {
@@ -78,7 +78,7 @@ func handlerAverageRepilicas() {
 	chainMetric.avgReplicas.Set(avg)
 }
 
-//全网文件数量、文件file_size和spower平均值
+// 全网文件数量、文件file_size和spower平均值
 func handlerFileAndSpower() {
 	count, err := db.FileCnt()
 	if err != nil {
@@ -104,7 +104,7 @@ func handlerFileAndSpower() {
 	log.Info("handler File And Spower done")
 }
 
-//按文件大小统计平均副本数
+// 按文件大小统计平均副本数
 func handlerReplicaCntBySize() {
 	for _, c := range avgReplicasBySize {
 		avg, err := db.AvgReplicasBySize(uint64(c.low), uint64(c.high))
@@ -122,7 +122,7 @@ func handlerReplicaCntBySize() {
 	log.Info("handlerReplicaCntBySize done")
 }
 
-//按创建时间统计平均副本数
+// 按创建时间统计平均副本数
 func handlerReplicaCntByCreateTime() {
 	now := chain.DefaultConn.GetLatestHeight()
 	if now == 0 {
@@ -149,7 +149,7 @@ func handlerReplicaCntByCreateTime() {
 	log.Info("handlerReplicaCntByCreateTime done")
 }
 
-//按副本数量统计文件个数
+// 按副本数量统计文件个数
 func handlerFileCntByReplicas() {
 	for _, c := range fileCntByReplicaSize {
 		cnt, err := db.FileCntByReplicaSize(uint64(c.low), uint64(c.high))
@@ -167,7 +167,7 @@ func handlerFileCntByReplicas() {
 	log.Info("handlerFileCntByReplicas done")
 }
 
-//handlerSlotFileCnt 新增文件数
+// handlerSlotFileCnt 新增文件数
 func handlerSlotFileCnt() {
 	bn, err := db.GetBlockNumber()
 	if err != nil {
@@ -194,7 +194,7 @@ func handlerSlotFileCnt() {
 	log.Info("Handler Slot Files done")
 }
 
-//按文件大小统计文件个数
+// 按文件大小统计文件个数
 func handlerFileCntBySize() {
 	for _, c := range fileCntBySize {
 		cnt, err := db.FileCntBySize(uint64(c.low), uint64(c.high))
@@ -226,7 +226,7 @@ func handlerFileCntBySize() {
 	log.Info("handlerFileCntBySize done")
 }
 
-//按创建时间统计文件个数
+// 按创建时间统计文件个数
 func handlerFileCntByCreateTime() {
 	now := chain.DefaultConn.GetLatestHeight()
 	if now == 0 {
@@ -253,7 +253,7 @@ func handlerFileCntByCreateTime() {
 	log.Info("handlerFileCntByCreateTime done")
 }
 
-//按文件过期时间统计文件个数
+// 按文件过期时间统计文件个数
 func handlerFileCntByExpireTime() {
 	now := chain.DefaultConn.GetLatestHeight()
 	if now == 0 {
@@ -474,14 +474,19 @@ func handlerStake() {
 }
 
 func handlerTopStake() {
+	index, err := chain.GetCurrentIndex(chain.DefaultConn)
+	if err != nil {
+		log.Error("get current era error", "err", err)
+		return
+	}
 	stakes, err := chain.GetTopStakeLimit(chain.DefaultConn)
 	if err != nil {
 		log.Error("get top stake limit error", "err", err)
 		return
 	}
-
+	eraIndex := strconv.Itoa(int(index))
 	for _, stake := range stakes {
-		chainMetric.topStakeLimit.WithLabelValues(stake.Acc).Set(stake.Value / float64(TB))
+		chainMetric.topStakeLimit.WithLabelValues(eraIndex, stake.Acc).Set(stake.Value / float64(TB))
 	}
 	log.Info("top stake limit done")
 }
@@ -503,19 +508,24 @@ func handlerValidators() {
 }
 
 func handlerStakeCount() {
-
+	index, err := chain.GetCurrentIndex(chain.DefaultConn)
+	if err != nil {
+		log.Error("get current era error", "err", err)
+		return
+	}
+	eraIndex := strconv.Itoa(int(index))
 	gCnt, err := chain.DefaultConn.GetKeysCnt("Staking", "Guarantors")
 	if err != nil {
 		log.Error("get Staking Guarantors Count error", "err", err)
 	} else {
-		chainMetric.guarantors.Set(float64(gCnt))
+		chainMetric.guarantors.WithLabelValues(eraIndex).Set(float64(gCnt))
 	}
 
 	vCnt, err := chain.DefaultConn.GetKeysCnt("Staking", "Validators")
 	if err != nil {
 		log.Error("get Staking Validators Count error", "err", err)
 	} else {
-		chainMetric.validators.Set(float64(vCnt))
+		chainMetric.validators.WithLabelValues(eraIndex).Set(float64(vCnt))
 	}
 	log.Info("validators count done")
 }
