@@ -7,7 +7,6 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"net/http"
 	"statistic/config"
 	"time"
@@ -23,7 +22,6 @@ type ChainMetrics struct {
 	stop      chan int
 	config    config.MetricConfig
 	scheduler *gocron.Scheduler
-	pusher    *push.Pusher
 }
 
 var chainMetric *ChainMetrics
@@ -45,23 +43,9 @@ func NewChainMetrics(config *config.Config, startCh <-chan int) *ChainMetrics {
 }
 
 func (c *ChainMetrics) registerMetric() {
-	pusher := push.New(c.config.GateWay, "statistic-metric")
-	pusher.Grouping("service", "statistic")
-	register := prometheus.NewRegistry()
-	register.MustRegister(c.getFileCollector()...)
-	register.MustRegister(c.getSworkerCollector()...)
-	register.MustRegister(c.getStakeCollector()...)
-	pusher.Gatherer(register)
-	c.pusher = pusher
-	c.scheduler.Every(c.config.PushInterval).Seconds().Do(func() {
-		time.Sleep(5 * time.Second)
-		err := c.pusher.Add()
-		if err != nil {
-			log.Error("push metric err", "err", err)
-		} else {
-			log.Info("push metric success")
-		}
-	})
+	c.fileMetrics.register(c.scheduler)
+	c.sworkerMetrics.register(c.scheduler)
+	c.stakeMetrics.register(c.scheduler)
 	prometheus.MustRegister(c.getFileCollector()...)
 	prometheus.MustRegister(c.getSworkerCollector()...)
 	prometheus.MustRegister(c.getStakeCollector()...)

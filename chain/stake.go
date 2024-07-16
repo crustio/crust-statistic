@@ -84,6 +84,9 @@ func GetCurrentIndex(conn *connection) (uint32, error) {
 		return 0, err
 	}
 	data, err := conn.GetStorageRawLatest(key)
+	if err != nil {
+		return 0, err
+	}
 	var val uint32
 	err = types.DecodeFromBytes(*data, &val)
 	if err != nil {

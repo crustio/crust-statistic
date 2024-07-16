@@ -1,12 +1,17 @@
 package metrics
 
 import (
+	log "github.com/ChainSafe/log15"
+	"github.com/go-co-op/gocron"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/push"
 	"statistic/config"
 	"strings"
+	"time"
 )
 
 type fileMetrics struct {
+	cfg                      config.MetricConfig
 	filesCnt                 prometheus.Gauge
 	avgReplicas              prometheus.Gauge
 	avgReplicasBySize        *prometheus.GaugeVec
@@ -28,6 +33,7 @@ func NewFileMetrics(cfg config.MetricConfig) fileMetrics {
 		prefix = "Test_"
 	}
 	return fileMetrics{
+		cfg: cfg,
 		filesCnt: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: prefix + "FilesCnt",
 			Help: "Number of files",
@@ -129,4 +135,21 @@ func (f *fileMetrics) getFileCollector() []prometheus.Collector {
 		f.fileCntByExpireTime,
 		f.fileOrdersBySlot,
 	}
+}
+
+func (f *fileMetrics) register(scheduler *gocron.Scheduler) {
+	pusher := push.New(f.cfg.GateWay, "statistic-metric")
+	pusher.Grouping("service", "statistic-file")
+	register := prometheus.NewRegistry()
+	register.MustRegister(f.getFileCollector()...)
+	pusher.Gatherer(register)
+	scheduler.Every(f.cfg.Interval).Seconds().Do(func() {
+		time.Sleep(60 * time.Second)
+		err := pusher.Add()
+		if err != nil {
+			log.Error("push metric file err", "err", err)
+		} else {
+			log.Info("push metric file success")
+		}
+	})
 }

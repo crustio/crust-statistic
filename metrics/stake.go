@@ -1,12 +1,17 @@
 package metrics
 
 import (
+	log "github.com/ChainSafe/log15"
+	"github.com/go-co-op/gocron"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/push"
 	"statistic/config"
 	"strings"
+	"time"
 )
 
 type stakeMetrics struct {
+	cfg                  config.MetricConfig
 	totalStakes          *prometheus.GaugeVec
 	topStakeLimit        *prometheus.GaugeVec
 	topValidatorSpower   *prometheus.GaugeVec
@@ -23,6 +28,7 @@ func NewStakeMetrics(cfg config.MetricConfig) stakeMetrics {
 		prefix = "Test_"
 	}
 	return stakeMetrics{
+		cfg: cfg,
 		totalStakes: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "TotalStakes",
@@ -93,4 +99,21 @@ func (s *stakeMetrics) getStakeCollector() []prometheus.Collector {
 		s.validators,
 		s.rewards,
 	}
+}
+
+func (s *stakeMetrics) register(scheduler *gocron.Scheduler) {
+	pusher := push.New(s.cfg.GateWay, "statistic-metric")
+	pusher.Grouping("service", "statistic-stake")
+	register := prometheus.NewRegistry()
+	register.MustRegister(s.getStakeCollector()...)
+	pusher.Gatherer(register)
+	scheduler.Every(s.cfg.StakeInterval).Seconds().Do(func() {
+		time.Sleep(60 * time.Second)
+		err := pusher.Add()
+		if err != nil {
+			log.Error("push metric stake err", "err", err)
+		} else {
+			log.Info("push metric stake success")
+		}
+	})
 }

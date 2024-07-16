@@ -1,8 +1,13 @@
 package metrics
 
 import (
+	log "github.com/ChainSafe/log15"
+	"github.com/go-co-op/gocron"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/push"
 	"statistic/config"
+	"strings"
+	"time"
 )
 
 var versionMap = map[string]string{
@@ -17,6 +22,7 @@ var versionMap = map[string]string{
 }
 
 type sworkerMetrics struct {
+	cfg                        config.MetricConfig
 	storageSize                *prometheus.GaugeVec
 	sworkerCnt                 *prometheus.GaugeVec
 	sworkerCntByRatio          *prometheus.GaugeVec
@@ -33,59 +39,64 @@ func NewSworkerMetrics(cfg config.MetricConfig) sworkerMetrics {
 			versionMap[code] = cfg.Versions[i]
 		}
 	}
+	prefix := ""
+	if strings.ToUpper(cfg.Env) == TEST {
+		prefix = "Test_"
+	}
 	return sworkerMetrics{
+		cfg: cfg,
 		storageSize: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "StorageSize",
+				Name: prefix + "StorageSize",
 				Help: "storage size (PB)",
 			},
 			[]string{"type"},
 		),
 		sworkerCnt: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "SworkerCnt",
+				Name: prefix + "SworkerCnt",
 				Help: "sworker number",
 			},
 			[]string{"type"},
 		),
 		sworkerCntByRatio: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "SworkerCntByRatio",
+				Name: prefix + "SworkerCntByRatio",
 				Help: "sworker number by reported file size to free size",
 			},
 			[]string{"ratio"},
 		),
 		groupCnt: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "GroupCnt",
+				Name: prefix + "GroupCnt",
 				Help: "Group number",
 			},
 			[]string{"type"},
 		),
 		avgSworkerCntByGroup: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "AvgSworkerCntByGroup",
+				Name: prefix + "AvgSworkerCntByGroup",
 				Help: "average sworker number by group",
 			},
 			[]string{"type"},
 		),
 		groupCntBySworkerCnt: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "GroupCntBySworkerCnt",
+				Name: prefix + "GroupCntBySworkerCnt",
 				Help: "group number by all sworker count",
 			},
 			[]string{"size"},
 		),
 		groupCntByActiveSworkerCnt: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "GroupCntByActiveSworkerCnt",
+				Name: prefix + "GroupCntByActiveSworkerCnt",
 				Help: "group number by active sworker count",
 			},
 			[]string{"size"},
 		),
 		sworkerByVersion: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "SworkerByVersion",
+				Name: prefix + "SworkerByVersion",
 				Help: "sworker number by version",
 			},
 			[]string{"version"},
@@ -104,4 +115,21 @@ func (s *sworkerMetrics) getSworkerCollector() []prometheus.Collector {
 		s.groupCntByActiveSworkerCnt,
 		s.sworkerByVersion,
 	}
+}
+
+func (s *sworkerMetrics) register(scheduler *gocron.Scheduler) {
+	pusher := push.New(s.cfg.GateWay, "statistic-metric")
+	pusher.Grouping("service", "statistic-sworker")
+	register := prometheus.NewRegistry()
+	register.MustRegister(s.getSworkerCollector()...)
+	pusher.Gatherer(register)
+	scheduler.Every(s.cfg.SworkerInterval).Seconds().Do(func() {
+		time.Sleep(60 * time.Second)
+		err := pusher.Add()
+		if err != nil {
+			log.Error("push metric sworker err", "err", err)
+		} else {
+			log.Info("push metric sworker success")
+		}
+	})
 }
