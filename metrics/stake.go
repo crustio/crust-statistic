@@ -20,6 +20,7 @@ type stakeMetrics struct {
 	guarantors           *prometheus.GaugeVec
 	validators           *prometheus.GaugeVec
 	rewards              *prometheus.GaugeVec
+	currentEra           prometheus.Gauge
 }
 
 func NewStakeMetrics(cfg config.MetricConfig) stakeMetrics {
@@ -85,6 +86,10 @@ func NewStakeMetrics(cfg config.MetricConfig) stakeMetrics {
 			},
 			[]string{"eraIndex"},
 		),
+		currentEra: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: prefix + "CurrentEraIndex",
+			Help: "Current eraIndex",
+		}),
 	}
 }
 
@@ -98,6 +103,7 @@ func (s *stakeMetrics) getStakeCollector() []prometheus.Collector {
 		s.guarantors,
 		s.validators,
 		s.rewards,
+		s.currentEra,
 	}
 }
 

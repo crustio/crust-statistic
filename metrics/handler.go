@@ -513,6 +513,7 @@ func handlerStakeCount() {
 		log.Error("get current era error", "err", err)
 		return
 	}
+	chainMetric.currentEra.Set(float64(index))
 	eraIndex := strconv.Itoa(int(index))
 	gCnt, err := chain.DefaultConn.GetKeysCnt("Staking", "Guarantors")
 	if err != nil {
