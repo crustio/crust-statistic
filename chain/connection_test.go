@@ -39,3 +39,12 @@ func TestQueryKeysFile(t *testing.T) {
 	//fmt.Printf("%v", fileV2)
 
 }
+
+func TestTimeStamp(t *testing.T) {
+	conn := getConnection()
+	ts, err := conn.GetTimestamp()
+	if err != nil {
+		panic(err)
+	}
+	println(ts)
+}

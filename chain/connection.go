@@ -217,6 +217,20 @@ func (c *connection) GetLatestHeight() uint64 {
 	return uint64(header.Number)
 }
 
+func (c *connection) GetTimestamp() (int64, error) {
+	block, err := c.api.RPC.Chain.GetBlockLatest()
+	if err != nil {
+		return 0, err
+	}
+	ext := block.Block.Extrinsics[0]
+	var val types.UCompact
+	err = types.DecodeFromBytes(ext.Method.Args, &val)
+	if err != nil {
+		return 0, err
+	}
+	return val.Int64() / 1000, nil
+}
+
 func (c *connection) generateFileKey(cid []byte) (string, error) {
 	return generateFileKey(&c.meta, cid)
 }

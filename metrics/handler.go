@@ -452,14 +452,26 @@ func handlerSworkerVersion() {
 }
 
 func handlerStake() {
+
+	ts, err := chain.DefaultConn.GetTimestamp()
+	if err != nil {
+		log.Error("get current timestamp error", "err", err)
+		return
+	}
 	if !isInit {
+		index, err := chain.GetCurrentIndex(chain.DefaultConn)
+		if err != nil {
+			log.Error("get current era error", "err", err)
+			return
+		}
 		stakes, err := chain.GetTotalStakes(chain.DefaultConn)
 		if err != nil {
 			log.Error("get total stakes error", "err", err)
 			return
 		}
 		for _, stake := range stakes {
-			chainMetric.totalStakes.WithLabelValues(strconv.Itoa(int(stake.Index))).Set(float64(stake.Value))
+			hisTs := int(ts) - int(index-stake.Index)*3600*6
+			chainMetric.totalStakes.WithLabelValues(strconv.Itoa(int(stake.Index)), strconv.Itoa(hisTs)).Set(float64(stake.Value))
 		}
 		isInit = true
 	} else {
@@ -468,12 +480,17 @@ func handlerStake() {
 			log.Error("get stake by index error", "err", err)
 			return
 		}
-		chainMetric.totalStakes.WithLabelValues(strconv.Itoa(int(i))).Set(v)
+		chainMetric.totalStakes.WithLabelValues(strconv.Itoa(int(i)), strconv.Itoa(int(ts))).Set(v)
 	}
 	log.Info("total stakes done")
 }
 
 func handlerTopStake() {
+	ts, err := chain.DefaultConn.GetTimestamp()
+	if err != nil {
+		log.Error("get current timestamp error", "err", err)
+		return
+	}
 	index, err := chain.GetCurrentIndex(chain.DefaultConn)
 	if err != nil {
 		log.Error("get current era error", "err", err)
@@ -486,7 +503,7 @@ func handlerTopStake() {
 	}
 	eraIndex := strconv.Itoa(int(index))
 	for _, stake := range stakes {
-		chainMetric.topStakeLimit.WithLabelValues(eraIndex, stake.Acc).Set(stake.Value / float64(TB))
+		chainMetric.topStakeLimit.WithLabelValues(eraIndex, stake.Acc, strconv.Itoa(int(ts))).Set(stake.Value / float64(TB))
 	}
 	log.Info("top stake limit done")
 }
@@ -513,26 +530,41 @@ func handlerStakeCount() {
 		log.Error("get current era error", "err", err)
 		return
 	}
+	ts, err := chain.DefaultConn.GetTimestamp()
+	if err != nil {
+		log.Error("get current timestamp error", "err", err)
+		return
+	}
 	chainMetric.currentEra.Set(float64(index))
 	eraIndex := strconv.Itoa(int(index))
 	gCnt, err := chain.DefaultConn.GetKeysCnt("Staking", "Guarantors")
 	if err != nil {
 		log.Error("get Staking Guarantors Count error", "err", err)
 	} else {
-		chainMetric.guarantors.WithLabelValues(eraIndex).Set(float64(gCnt))
+		chainMetric.guarantors.WithLabelValues(eraIndex, strconv.Itoa(int(ts))).Set(float64(gCnt))
 	}
 
 	vCnt, err := chain.DefaultConn.GetKeysCnt("Staking", "Validators")
 	if err != nil {
 		log.Error("get Staking Validators Count error", "err", err)
 	} else {
-		chainMetric.validators.WithLabelValues(eraIndex).Set(float64(vCnt))
+		chainMetric.validators.WithLabelValues(eraIndex, strconv.Itoa(int(ts))).Set(float64(vCnt))
 	}
 	log.Info("validators count done")
 }
 
 func handlerRewards() {
+	ts, err := chain.DefaultConn.GetTimestamp()
+	if err != nil {
+		log.Error("get current timestamp error", "err", err)
+		return
+	}
 	if !isRewardInit {
+		index, err := chain.GetCurrentIndex(chain.DefaultConn)
+		if err != nil {
+			log.Error("get current era error", "err", err)
+			return
+		}
 		values, err := chain.GetStakingPayout(chain.DefaultConn)
 		if err != nil {
 			log.Error("get staking payout error", "err", err)
@@ -547,7 +579,8 @@ func handlerRewards() {
 			if v, ok := payouts[value.Index]; ok {
 				value.Value += v
 			}
-			chainMetric.rewards.WithLabelValues(strconv.Itoa(int(value.Index))).Set(value.Value)
+			hisTs := int(ts) - int(index-value.Index)*3600*6
+			chainMetric.rewards.WithLabelValues(strconv.Itoa(int(value.Index)), strconv.Itoa(hisTs)).Set(value.Value)
 		}
 		isRewardInit = true
 	} else {
@@ -556,7 +589,8 @@ func handlerRewards() {
 			log.Error("get reward by index error", "err", err)
 			return
 		}
-		chainMetric.rewards.WithLabelValues(strconv.Itoa(int(i))).Set(v)
+		ts = ts - 3600*6
+		chainMetric.rewards.WithLabelValues(strconv.Itoa(int(i)), strconv.Itoa(int(ts))).Set(v)
 	}
 	log.Info("era rewards done")
 }

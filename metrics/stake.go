@@ -35,14 +35,14 @@ func NewStakeMetrics(cfg config.MetricConfig) stakeMetrics {
 				Name: prefix + "TotalStakes",
 				Help: "total stakes",
 			},
-			[]string{"eraIndex"},
+			[]string{"eraIndex", "timestamp"},
 		),
 		topStakeLimit: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "TopStakeLimit",
 				Help: "Top10 Stake Limit",
 			},
-			[]string{"eraIndex", "account"},
+			[]string{"eraIndex", "account", "timestamp"},
 		),
 		topValidatorSpower: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -70,21 +70,21 @@ func NewStakeMetrics(cfg config.MetricConfig) stakeMetrics {
 				Name: prefix + "StakeGuarantorCnt",
 				Help: "Number of guarantors",
 			},
-			[]string{"eraIndex"},
+			[]string{"eraIndex", "timestamp"},
 		),
 		validators: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "StakeValidatorCnt",
 				Help: "Number of validators",
 			},
-			[]string{"eraIndex"},
+			[]string{"eraIndex", "timestamp"},
 		),
 		rewards: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "StakeRewards",
 				Help: "Rewards by eraIndex",
 			},
-			[]string{"eraIndex"},
+			[]string{"eraIndex", "timestamp"},
 		),
 		currentEra: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: prefix + "CurrentEraIndex",
