@@ -40,7 +40,7 @@ func NewStakeMetrics(cfg config.MetricConfig) stakeMetrics {
 		topStakeLimit: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "TopStakeLimit",
-				Help: "Top10 Stake Limit",
+				Help: "Top Stake Limit",
 			},
 			[]string{"eraIndex", "account", "timestamp"},
 		),

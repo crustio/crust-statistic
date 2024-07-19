@@ -3,7 +3,6 @@ package chain
 import (
 	log "github.com/ChainSafe/log15"
 	"github.com/crustio/go-substrate-rpc-client/v4/types"
-	"sort"
 )
 
 const TotalStakePrefix = "0x5f3e4907f716ac89b6347d15ececedcad9489331c06779251388c89753b39481"
@@ -144,12 +143,12 @@ func GetTopStakeLimit(conn *connection) ([]StakeLimit, error) {
 		startKey = keys[len(keys)-1]
 		log.Debug("get stake limit keys ", "cnt", len(keys))
 	}
-	if len(stakeSlice) > 0 {
-		sort.Slice(stakeSlice, func(i, j int) bool {
-			return stakeSlice[i].Value > stakeSlice[j].Value
-		})
-	}
-	return stakeSlice[:10], nil
+	//if len(stakeSlice) > 0 {
+	//	sort.Slice(stakeSlice, func(i, j int) bool {
+	//		return stakeSlice[i].Value > stakeSlice[j].Value
+	//	})
+	//}
+	return stakeSlice, nil
 }
 
 func GetStakingPayout(conn *connection) ([]Stake, error) {
