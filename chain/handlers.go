@@ -6,7 +6,7 @@ import (
 
 const (
 	New int = iota
-	Update
+	UpdateBase
 	UpdateRep
 	Delete
 )
@@ -16,7 +16,7 @@ func saveNewFile(fileInfo *FileInfoV2, cid string, number uint64) error {
 	return db.SaveFiles(file, true)
 }
 
-func updateFile(fileInfo *FileInfoV2, cid string) error {
+func updateFileBase(fileInfo *FileInfoV2, cid string) error {
 	file := fileInfo.ToFileSingleDto(cid)
 	return db.UpdateFile(file)
 }

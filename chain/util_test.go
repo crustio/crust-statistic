@@ -85,3 +85,21 @@ func Example_DecodeReportWork() {
 		println(types.HexEncodeToString([]byte(cid)))
 	}
 }
+
+func TestDecodeUpdateSpower(t *testing.T) {
+	api, _ := gsrpc.NewSubstrateAPI(TestUrl)
+
+	opts := types.SerDeOptions{NoPalletIndices: true}
+	types.SetSerDeOptions(opts)
+
+	hash, _ := api.RPC.Chain.GetBlockHash(15925076)
+	block, _ := api.RPC.Chain.GetBlock(hash)
+
+	cids, err := decodeCidsFromUpdateSpower(block, 1)
+	if err != nil {
+		panic(err)
+	}
+	for _, cid := range cids {
+		println(cid)
+	}
+}

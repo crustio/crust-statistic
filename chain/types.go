@@ -240,3 +240,26 @@ type StakeLimit struct {
 	Acc   string
 	Value float64
 }
+
+type updateSpower struct {
+	Spowers []spower
+	Files   []file
+}
+
+type spower struct {
+	Anchor SworkerPubKey
+	Number types.I64
+}
+
+type file struct {
+	Cid        types.Bytes
+	SpowerSize types.U64
+	Replicas   []replicaArg
+}
+
+type replicaArg struct {
+	Owner       types.AccountID
+	Who         types.AccountID
+	Anchor      SworkerPubKey
+	BlockNumber types.BlockNumber
+}

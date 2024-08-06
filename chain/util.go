@@ -131,6 +131,33 @@ func decodeReportWork(args types.Args) (*reportWork, error) {
 
 }
 
+func decodeCidsFromUpdateSpower(block *types.SignedBlock, index int) ([]string, error) {
+	if len(block.Block.Extrinsics) <= index {
+		return nil, errors.New("extrinsic out index")
+	}
+	ext := block.Block.Extrinsics[index]
+	val, err := decodeUpdateSpower(ext.Method.Args)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]string, 0, len(val.Files))
+	for _, f := range val.Files {
+		res = append(res, string(f.Cid))
+	}
+	return res, nil
+}
+
+func decodeUpdateSpower(args types.Args) (*updateSpower, error) {
+	val := &updateSpower{}
+	err := types.DecodeFromBytes(args, val)
+	if err != nil {
+		return nil, err
+	}
+	return val, nil
+
+}
+
 func decodeCall(bytes []byte) (*updateCall, error) {
 	val := &updateCall{}
 	err := types.DecodeFromBytes(bytes, val)

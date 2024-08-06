@@ -143,9 +143,10 @@ func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) e
 
 	for _, evt := range evts.Market_RenewFileSuccess {
 		if _, ok := result[string(evt.Cid)]; !ok {
-			result[string(evt.Cid)] = Update
+			result[string(evt.Cid)] = UpdateBase
 		}
 	}
+
 	var block *types.SignedBlock
 	if l.useMarket {
 		for _, evt := range evts.Market_UpdateReplicasSuccess {
@@ -178,6 +179,22 @@ func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) e
 			for _, cid := range cids {
 				result[cid] = UpdateRep
 			}
+		}
+	}
+
+	for _, evt := range evts.Swork_UpdateSpowerSuccess {
+		if block == nil {
+			block, err = l.conn.GetBlock(hash)
+			if err != nil {
+				return err
+			}
+		}
+		cids, err := decodeCidsFromUpdateSpower(block, int(evt.Phase.AsApplyExtrinsic))
+		if err != nil {
+			return err
+		}
+		for _, cid := range cids {
+			result[cid] = UpdateRep
 		}
 	}
 
@@ -250,10 +267,10 @@ func (l *listener) updateFiles(ops map[string]int, hash *types.Hash, number uint
 			if ok {
 				err = saveNewFile(file.File, file.Cid, number)
 			}
-		case Update:
+		case UpdateBase:
 			file, ok := cidMap[cid]
 			if ok {
-				err = updateFile(file.File, file.Cid)
+				err = updateFileBase(file.File, file.Cid)
 			}
 		case UpdateRep:
 			file, ok := cidMap[cid]
