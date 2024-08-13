@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"regexp"
+	"statistic/config"
+
 	"github.com/crustio/go-substrate-rpc-client/v4/types"
 	"github.com/crustio/go-substrate-rpc-client/v4/xxhash"
 	"github.com/crustio/scale.go/utiles"
 	"github.com/decred/base58"
 	"golang.org/x/crypto/blake2b"
-	"regexp"
-	"statistic/config"
 )
 
 const SlotSize = 600
@@ -155,7 +156,32 @@ func decodeUpdateSpower(args types.Args) (*updateSpower, error) {
 		return nil, err
 	}
 	return val, nil
+}
 
+func decodeCidsFromCalculateSuccess(block *types.SignedBlock, index int) ([]string, error) {
+	if len(block.Block.Extrinsics) <= index {
+		return nil, errors.New("extrinsic out index")
+	}
+	ext := block.Block.Extrinsics[index]
+	val, err := decodeCalculateSpower(ext.Method.Args)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]string, 0, len(val.Files))
+	for _, f := range val.Files {
+		res = append(res, string(f.Cid))
+	}
+	return res, nil
+}
+
+func decodeCalculateSpower(args types.Args) (*calculateSpower, error) {
+	val := &calculateSpower{}
+	err := types.DecodeFromBytes(args, val)
+	if err != nil {
+		return nil, err
+	}
+	return val, nil
 }
 
 func decodeCall(bytes []byte) (*updateCall, error) {

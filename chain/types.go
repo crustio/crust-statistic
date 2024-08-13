@@ -1,10 +1,11 @@
 package chain
 
 import (
-	"github.com/crustio/go-substrate-rpc-client/v4/types"
 	"math"
 	"math/big"
 	"statistic/db"
+
+	"github.com/crustio/go-substrate-rpc-client/v4/types"
 )
 
 const ExpireDuration = 6 * 30 * 24 * 60 * 60 / 6
@@ -262,4 +263,9 @@ type replicaArg struct {
 	Who         types.AccountID
 	Anchor      SworkerPubKey
 	BlockNumber types.BlockNumber
+}
+
+type calculateSpower struct {
+	Spowers []spower
+	Files   []file
 }

@@ -2,10 +2,11 @@ package chain
 
 import (
 	"errors"
-	"github.com/ChainSafe/log15"
-	"github.com/crustio/go-substrate-rpc-client/v4/types"
 	"statistic/db"
 	"time"
+
+	"github.com/ChainSafe/log15"
+	"github.com/crustio/go-substrate-rpc-client/v4/types"
 )
 
 const BlockRetryInterval = time.Second * 5
@@ -190,6 +191,22 @@ func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) e
 			}
 		}
 		cids, err := decodeCidsFromUpdateSpower(block, int(evt.Phase.AsApplyExtrinsic))
+		if err != nil {
+			return err
+		}
+		for _, cid := range cids {
+			result[cid] = UpdateRep
+		}
+	}
+
+	for _, evt := range evts.Market_CalculateSpowersSuccess {
+		if block == nil {
+			block, err = l.conn.GetBlock(hash)
+			if err != nil {
+				return err
+			}
+		}
+		cids, err := decodeCidsFromCalculateSuccess(block, int(evt.Phase.AsApplyExtrinsic))
 		if err != nil {
 			return err
 		}
