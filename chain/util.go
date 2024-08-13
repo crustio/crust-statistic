@@ -158,7 +158,7 @@ func decodeUpdateSpower(args types.Args) (*updateSpower, error) {
 	return val, nil
 }
 
-func decodeCidsFromCalculateSuccess(block *types.SignedBlock, index int) ([]string, error) {
+func decodeCidsFromCalculateSpowersSuccess(block *types.SignedBlock, index int) ([]string, error) {
 	if len(block.Block.Extrinsics) <= index {
 		return nil, errors.New("extrinsic out index")
 	}

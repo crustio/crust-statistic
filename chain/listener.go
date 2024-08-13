@@ -206,7 +206,7 @@ func (l *listener) handleEvents(evts *Events, hash *types.Hash, number uint64) e
 				return err
 			}
 		}
-		cids, err := decodeCidsFromCalculateSuccess(block, int(evt.Phase.AsApplyExtrinsic))
+		cids, err := decodeCidsFromCalculateSpowersSuccess(block, int(evt.Phase.AsApplyExtrinsic))
 		if err != nil {
 			return err
 		}
