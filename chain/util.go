@@ -168,10 +168,11 @@ func decodeCidsFromCalculateSpowersSuccess(block *types.SignedBlock, index int) 
 		return nil, err
 	}
 
-	res := make([]string, 0, len(val.Files))
-	for _, f := range val.Files {
-		res = append(res, string(f.Cid))
+	res := make([]string, 0, len(val.Cids))
+	for _, cid := range val.Cids {
+		res = append(res, string(cid))
 	}
+
 	return res, nil
 }
 

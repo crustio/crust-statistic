@@ -266,6 +266,5 @@ type replicaArg struct {
 }
 
 type calculateSpower struct {
-	Spowers []spower
-	Files   []file
+	Cids []types.Bytes
 }
