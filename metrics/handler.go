@@ -366,14 +366,17 @@ func handlerStorageV2(all, active int) {
 
 	chainMetric.sworkerCnt.WithLabelValues("all").Set(float64(all))
 	chainMetric.sworkerCnt.WithLabelValues("active").Set(float64(active))
-	
+
 	freePB := free / float64(PB)
 	fileSizePB := fileSize / float64(PB)
+	allSpowerPB := allSpower / float64(PB)
+
 	allPB := freePB + fileSizePB
+
 	chainMetric.storageSizeV2.WithLabelValues("all").Set(allPB)
 	chainMetric.storageSizeV2.WithLabelValues("free").Set(freePB)
 	chainMetric.storageSizeV2.WithLabelValues("used").Set(fileSizePB)
-	chainMetric.storageSizeV2.WithLabelValues("spower").Set(allSpower)
+	chainMetric.storageSizeV2.WithLabelValues("spower").Set(allSpowerPB)
 }
 
 func handlerSwokerByRatio() {
