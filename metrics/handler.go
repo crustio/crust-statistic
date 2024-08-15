@@ -1,12 +1,13 @@
 package metrics
 
 import (
-	log "github.com/ChainSafe/log15"
 	"math"
 	"statistic/chain"
 	"statistic/config"
 	"statistic/db"
 	"strconv"
+
+	log "github.com/ChainSafe/log15"
 )
 
 type metricHandler func()
@@ -306,6 +307,7 @@ func handlerSwoker() {
 	}
 	log.Info("get swork report done")
 	go handlerStorage(all, active)
+	go handlerStorageV2(all, active)
 	go handlerSwokerByRatio()
 	go handlerSworkerVersion()
 	err = chain.GetGroupInfo(chain.DefaultConn)
@@ -343,6 +345,38 @@ func handlerStorage(all, active int) {
 	chainMetric.storageSize.WithLabelValues("all").Set(allPB)
 	chainMetric.storageSize.WithLabelValues("free").Set(freePB)
 	chainMetric.storageSize.WithLabelValues("used").Set(fileSizePB)
+}
+
+func handlerStorageV2(all, active int) {
+	free, err := db.SumFree()
+	if err != nil {
+		log.Error("get storage free error", "err", err)
+		return
+	}
+	fileSize, err := db.SumFileSize()
+	if err != nil {
+		log.Error("get storage file size error", "err", err)
+		return
+	}
+	allSpower, err := db.SumAllSpower()
+	if err != nil {
+		log.Error("get all spower error", "err", err)
+		return
+	}
+
+	chainMetric.sworkerCnt.WithLabelValues("all").Set(float64(all))
+	chainMetric.sworkerCnt.WithLabelValues("active").Set(float64(active))
+
+	freePB := free / float64(PB)
+	fileSizePB := fileSize / float64(PB)
+	allSpowerPB := allSpower / float64(PB)
+
+	allPB := freePB + fileSizePB
+
+	chainMetric.storageSizeV2.WithLabelValues("all").Set(allPB)
+	chainMetric.storageSizeV2.WithLabelValues("free").Set(freePB)
+	chainMetric.storageSizeV2.WithLabelValues("used").Set(fileSizePB)
+	chainMetric.storageSizeV2.WithLabelValues("spower").Set(allSpowerPB)
 }
 
 func handlerSwokerByRatio() {

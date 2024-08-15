@@ -51,6 +51,13 @@ func SumFileSize() (float64, error) {
 	return sum, err
 }
 
+func SumAllSpower() (float64, error) {
+	var sum float64
+	err := MysqlDb.Table("work_report").
+		Select("sum(spower)").Scan(&sum).Error
+	return sum, err
+}
+
 func NodeCntByRatio(low float64, high float64) (int64, error) {
 	var count int64
 	tx := MysqlDb.Table("work_report")

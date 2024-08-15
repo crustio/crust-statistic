@@ -1,13 +1,14 @@
 package metrics
 
 import (
+	"statistic/config"
+	"strings"
+	"time"
+
 	log "github.com/ChainSafe/log15"
 	"github.com/go-co-op/gocron"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
-	"statistic/config"
-	"strings"
-	"time"
 )
 
 var versionMap = map[string]string{
@@ -24,6 +25,7 @@ var versionMap = map[string]string{
 type sworkerMetrics struct {
 	cfg                        config.MetricConfig
 	storageSize                *prometheus.GaugeVec
+	storageSizeV2                *prometheus.GaugeVec
 	sworkerCnt                 *prometheus.GaugeVec
 	sworkerCntByRatio          *prometheus.GaugeVec
 	groupCnt                   *prometheus.GaugeVec
@@ -48,6 +50,13 @@ func NewSworkerMetrics(cfg config.MetricConfig) sworkerMetrics {
 		storageSize: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: prefix + "StorageSize",
+				Help: "storage size (PB)",
+			},
+			[]string{"type"},
+		),
+		storageSizeV2: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: prefix + "StorageSizeV2",
 				Help: "storage size (PB)",
 			},
 			[]string{"type"},
