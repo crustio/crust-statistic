@@ -2,8 +2,6 @@ module statistic
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	github.com/ChainSafe/log15 v1.0.0
 	github.com/crustio/chainbridge-substrate-events v1.8.3
