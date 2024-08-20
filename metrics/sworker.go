@@ -115,7 +115,7 @@ func NewSworkerMetrics(cfg config.MetricConfig) sworkerMetrics {
 
 func (s *sworkerMetrics) getSworkerCollector() []prometheus.Collector {
 	return []prometheus.Collector{
-		s.storageSize,
+		//s.storageSize,
 		s.storageSizeV2,
 		s.sworkerCnt,
 		s.sworkerCntByRatio,
