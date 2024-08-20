@@ -25,7 +25,7 @@ var versionMap = map[string]string{
 type sworkerMetrics struct {
 	cfg                        config.MetricConfig
 	storageSize                *prometheus.GaugeVec
-	storageSizeV2                *prometheus.GaugeVec
+	storageSizeV2              *prometheus.GaugeVec
 	sworkerCnt                 *prometheus.GaugeVec
 	sworkerCntByRatio          *prometheus.GaugeVec
 	groupCnt                   *prometheus.GaugeVec
@@ -116,6 +116,7 @@ func NewSworkerMetrics(cfg config.MetricConfig) sworkerMetrics {
 func (s *sworkerMetrics) getSworkerCollector() []prometheus.Collector {
 	return []prometheus.Collector{
 		s.storageSize,
+		s.storageSizeV2,
 		s.sworkerCnt,
 		s.sworkerCntByRatio,
 		s.groupCnt,
